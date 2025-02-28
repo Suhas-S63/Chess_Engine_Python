@@ -2,7 +2,7 @@
 Main driver file. The file will be handling user move input and display current game state object
 """
 import pygame as pyg
-from Engine import ChessEngine, ChessAI
+import ChessEngine, ChessAI
 
 
 BOARD_WIDTH = BOARD_HEIGHT = 512
