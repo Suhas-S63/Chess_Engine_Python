@@ -167,17 +167,15 @@ class GameState:
         Temp_Castle_Rights = CastleRights(self.CurrentCastlingRights.WhiteKSide, self.CurrentCastlingRights.BlackKSide,
                                           self.CurrentCastlingRights.WhiteQSide, self.CurrentCastlingRights.BlackQSide)
 
-        # Advanced Algorithm to check for validMoves after generating all the possible moves
+        # Algorithm to check for validMoves after generating all the possible moves
         moves = []
         self.inCheckFlag, self.pins, self.checks = self.CheckForPinsAndChecks()
         if self.whiteToMove:  # white piece
             kingRow = self.WhiteKingLocation[0]
             kingCol = self.WhiteKingLocation[1]
-            # self.GetCastleMoves(kingRow, kingCol , moves) # Generating Castle moves for White King
         else:
             kingRow = self.BlackKingLocation[0]
             kingCol = self.BlackKingLocation[1]
-            # self.GetCastleMoves(kingRow, kingCol, moves)  # Generating Castle moves for Black King
         if self.inCheckFlag:
             if len(self.checks) == 1:  # only 1 check, block check with piece or move kind
                 moves = self.GetAllPossibleMoves()
@@ -432,8 +430,7 @@ class GameState:
             if self.pins[i][0] == row and self.pins[i][1] == col:
                 piecePinned = True
                 pinDirection = (self.pins[i][2], self.pins[i][3])
-                if self.board[row][col][
-                    1] != "Q":  # cant remove queen from pin on rook, only removing it on bishop moves(This code can be removed as the implementation that is done here is on pure logic rather than depending on two other functions
+                if self.board[row][col][1] != "Q":  # cant remove queen from pin on rook, only removing it on bishop moves(This code can be removed as the implementation that is done here is on pure logic rather than depending on two other functions
                     self.pins.remove(self.pins[i])
                 break
 
