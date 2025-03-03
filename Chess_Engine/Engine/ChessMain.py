@@ -5,7 +5,7 @@ import pygame as pyg
 import ChessEngine, ChessAI
 
 
-BOARD_WIDTH = BOARD_HEIGHT = 768
+BOARD_WIDTH = BOARD_HEIGHT = 640
 MOVE_LOG_PANEL_WIDTH = 270
 MOVE_LOG_PANEL_HEIGHT = BOARD_HEIGHT
 BOARD_DIMENSION = 8  #  dimensions of the chess board
@@ -138,7 +138,6 @@ def main():
 '''
 The following function is responsible for all the graphics with the current game state
 '''
-
 
 def DrawGameState(screen, game_state, validMoves, square_selected, MoveLogFont):
     DrawBoard(screen)  # draw the game board which are the squares
@@ -323,7 +322,6 @@ def DrawMoveLog(screen, game_state, font):
         TextLocation = MoveLogRect.move(padding, text_Y)
         screen.blit(TextObj, TextLocation)
         text_Y += TextObj.get_height() + line_spacing
-
 
 if __name__ == "__main__":
     main()
