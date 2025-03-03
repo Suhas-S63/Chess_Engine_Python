@@ -5,13 +5,14 @@ import pygame as pyg
 import ChessEngine, ChessAI
 
 
-BOARD_WIDTH = BOARD_HEIGHT = 512
+BOARD_WIDTH = BOARD_HEIGHT = 768
 MOVE_LOG_PANEL_WIDTH = 270
 MOVE_LOG_PANEL_HEIGHT = BOARD_HEIGHT
 BOARD_DIMENSION = 8  #  dimensions of the chess board
 SQUARE_SIZE = BOARD_HEIGHT // BOARD_DIMENSION  # size of each square on the board
 MAX_FPS = 30  # game loop frequency and animation cycles
 PIECE_IMAGES = {}
+global colors
 
 '''
 Initialising a global dictionary of images. The function will be called once in main
@@ -21,7 +22,7 @@ Initialising a global dictionary of images. The function will be called once in 
 def LoadImages():
     pieces = ['bR', 'bN', 'bB', 'bQ', 'bK', 'bP', 'wR', 'wN', 'wB', 'wQ', 'wK', 'wP']
     for piece in pieces:
-        PIECE_IMAGES[piece] = pyg.transform.scale(pyg.image.load(f'piece_images/{piece}.png'),
+        PIECE_IMAGES[piece] = pyg.transform.smoothscale(pyg.image.load(f'piece_images/{piece}.png'),
                                                   (SQUARE_SIZE, SQUARE_SIZE))
 
         # we can now access an image by passing the piece notation in the dictionary
@@ -37,6 +38,7 @@ def main():
     # Initialize pygame
     pyg.init()
     screen = pyg.display.set_mode((BOARD_WIDTH + MOVE_LOG_PANEL_WIDTH, BOARD_HEIGHT))
+    pyg.display.set_caption("Chess Engine")
     clock = pyg.time.Clock()
     screen.fill(pyg.Color('white'))
     game_state = ChessEngine.GameState()
@@ -71,7 +73,14 @@ def main():
                         square_selected = (row, col)
                         player_clicks.append(square_selected)  # append for both 1st and 2nd click
                     if len(player_clicks) == 2:  # after 2nd click which is selecting the target square
-                        move = ChessEngine.Move(player_clicks[0], player_clicks[1], game_state.board)
+                        start_square = player_clicks[0]
+                        end_square = player_clicks[1]
+                        piece_moved = game_state.board[start_square[0]][start_square[1]]
+                        if piece_moved[1] == 'P' and end_square[0] == (0 if game_state.whiteToMove else 7):
+                            selected_piece = DrawPawnPromotionWindow(screen, piece_moved[0])
+                            move = ChessEngine.Move(start_square, end_square, game_state.board, Promotion_Piece=selected_piece)
+                        else:
+                            move = ChessEngine.Move(start_square, end_square, game_state.board)
                         for i in range(len(validMoves)):
                             if move == validMoves[i]:
                                 game_state.MakeMove(validMoves[i])
@@ -115,23 +124,12 @@ def main():
         # Update the screen with the current game state
         DrawGameState(screen, game_state, validMoves, square_selected, MoveLogFont)
 
-        # Check if the game is over
-        if game_state.Checkmate:
-            gameOver = True
-            if game_state.whiteToMove:
-                text = "Black wins by Checkmate!!"
-            else:
-                text = "White wins by Checkmate!!"
-            DrawEndGameText(screen, text)
-        elif game_state.Stalemate:
-            gameOver = True
-            text = "Stalemate!!"
-            DrawEndGameText(screen, text)
-        elif game_state.OnlyKingsPresent():
-            gameOver = True
-            text =  "Draw!!"
-            DrawEndGameText(screen, text)
-
+        # Checking EndGameStatus like checkmate, stalemate, Material count, 3-fold repetition
+        # and fifty move draw to see if the game is over
+        end_game_text, gameOver = game_state.CheckEndGameStatus()
+        if end_game_text:
+            DrawEndGameText(screen, end_game_text)
+            # If the game is over, we stop the game loop
 
         clock.tick(MAX_FPS)
         pyg.display.flip()
@@ -171,6 +169,48 @@ def DrawPieces(screen, board):
             if piece != '--':  # not an empy space
                 screen.blit(PIECE_IMAGES[piece],
                             pyg.Rect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+
+'''
+Drawing Pawn Promotion window if pawn is able to promote
+'''
+def DrawPawnPromotionWindow(screen, color):
+    # defining the piece options and load the images
+    pieces = ['Q', 'R', 'B', 'N']
+    piece_images = [PIECE_IMAGES[color + piece] for piece in pieces]
+
+    # window dimensions
+    panel_width = 4 * SQUARE_SIZE # 4 pieces width
+    panel_height = SQUARE_SIZE # 1 row height
+    panel_x = (BOARD_WIDTH - panel_width) // 2 # Center horizontally
+    panel_y = (BOARD_HEIGHT - panel_height) // 2 # Center vertically
+
+    # drawing the window
+    promotion_panel = pyg.Surface((panel_width, panel_height), pyg.SRCALPHA)
+    promotion_panel.set_alpha(150)
+    promotion_panel.fill(pyg.Color('chocolate')) # Gray wth transparency
+    screen.blit(promotion_panel, (panel_x, panel_y))
+
+    # drawing the piece options
+    for i , image in enumerate(piece_images):
+        screen.blit(image, (panel_x + i * SQUARE_SIZE, panel_y))
+
+    pyg.display.flip() # update the game display
+
+    # wait for user input to select a piece
+    piece_selected = None
+    while piece_selected is None:
+        for event in pyg.event.get():
+            if event.type == pyg.QUIT:
+                pyg.quit()
+            elif event.type == pyg.MOUSEBUTTONDOWN:
+                position = pyg.mouse.get_pos()  # (x,y) coords of mouse
+                if panel_y <= position[1] <= panel_y + SQUARE_SIZE: # within UI height
+                    for i in range(4):
+                        if panel_x + i * SQUARE_SIZE <= position[0] <= panel_x + (i + 1) * SQUARE_SIZE:
+                            piece_selected = pieces[i]
+                            break
+    return piece_selected
+
 
 ''' 
 Functions regarding highlighting moves and animating the moves to improve UI for good gameplay 
@@ -265,7 +305,7 @@ def DrawMoveLog(screen, game_state, font):
     move_log = game_state.moveLog
     Move_Texts = []
     for i in range(0, len(move_log), 2): # step by 2
-        move_string =  str(i // 2 + 1)+ ")" + " " + str(move_log[i]) + " "
+        move_string =  str(i // 2 + 1) + ")" + " " + str(move_log[i]) + " "
         if i + 1 < len(move_log): # to make sure black made a move
             move_string += str(move_log[i + 1]) + " "
         Move_Texts.append(move_string)
