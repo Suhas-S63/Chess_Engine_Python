@@ -12,6 +12,7 @@ BOARD_DIMENSION = 8  #  dimensions of the chess board
 SQUARE_SIZE = BOARD_HEIGHT // BOARD_DIMENSION  # size of each square on the board
 MAX_FPS = 30  # game loop frequency and animation cycles
 PIECE_IMAGES = {}
+global colors
 
 '''
 Initialising a global dictionary of images. The function will be called once in main
@@ -71,7 +72,14 @@ def main():
                         square_selected = (row, col)
                         player_clicks.append(square_selected)  # append for both 1st and 2nd click
                     if len(player_clicks) == 2:  # after 2nd click which is selecting the target square
-                        move = ChessEngine.Move(player_clicks[0], player_clicks[1], game_state.board)
+                        start_square = player_clicks[0]
+                        end_square = player_clicks[1]
+                        piece_moved = game_state.board[start_square[0]][start_square[1]]
+                        if piece_moved[1] == 'P' and end_square[0] == (0 if game_state.whiteToMove else 7):
+                            selected_piece = DrawPawnPromotionWindow(screen, piece_moved[0])
+                            move = ChessEngine.Move(start_square, end_square, game_state.board, Promotion_Piece=selected_piece)
+                        else:
+                            move = ChessEngine.Move(start_square, end_square, game_state.board)
                         for i in range(len(validMoves)):
                             if move == validMoves[i]:
                                 game_state.MakeMove(validMoves[i])
@@ -171,6 +179,48 @@ def DrawPieces(screen, board):
             if piece != '--':  # not an empy space
                 screen.blit(PIECE_IMAGES[piece],
                             pyg.Rect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+
+'''
+Drawing Pawn Promotion window if pawn is able to promote
+'''
+def DrawPawnPromotionWindow(screen, color):
+    # defining the piece options and load the images
+    pieces = ['Q', 'R', 'B', 'N']
+    piece_images = [PIECE_IMAGES[color + piece] for piece in pieces]
+
+    # window dimensions
+    panel_width = 4 * SQUARE_SIZE # 4 pieces width
+    panel_height = SQUARE_SIZE # 1 row height
+    panel_x = (BOARD_WIDTH - panel_width) // 2 # Center horizontally
+    panel_y = (BOARD_HEIGHT - panel_height) // 2 # Center vertically
+
+    # drawing the window
+    promotion_panel = pyg.Surface((panel_width, panel_height), pyg.SRCALPHA)
+    promotion_panel.set_alpha(150)
+    promotion_panel.fill(pyg.Color('chocolate')) # Gray wth transparency
+    screen.blit(promotion_panel, (panel_x, panel_y))
+
+    # drawing the piece options
+    for i , image in enumerate(piece_images):
+        screen.blit(image, (panel_x + i * SQUARE_SIZE, panel_y))
+
+    pyg.display.flip() # update the game display
+
+    # wait for user input to select a piece
+    piece_selected = None
+    while piece_selected is None:
+        for event in pyg.event.get():
+            if event.type == pyg.QUIT:
+                pyg.quit()
+            elif event.type == pyg.MOUSEBUTTONDOWN:
+                position = pyg.mouse.get_pos()  # (x,y) coords of mouse
+                if panel_y <= position[1] <= panel_y + SQUARE_SIZE: # within UI height
+                    for i in range(4):
+                        if panel_x + i * SQUARE_SIZE <= position[0] <= panel_x + (i + 1) * SQUARE_SIZE:
+                            piece_selected = pieces[i]
+                            break
+    return piece_selected
+
 
 ''' 
 Functions regarding highlighting moves and animating the moves to improve UI for good gameplay 
