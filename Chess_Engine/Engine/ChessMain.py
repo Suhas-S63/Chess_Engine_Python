@@ -4,7 +4,6 @@ Main driver file. The file will be handling user move input and display current 
 import pygame as pyg
 import ChessEngine, ChessAI
 
-
 BOARD_WIDTH = BOARD_HEIGHT = 640
 MOVE_LOG_PANEL_WIDTH = 270
 MOVE_LOG_PANEL_HEIGHT = BOARD_HEIGHT
