@@ -12,7 +12,11 @@ BOARD_DIMENSION = 8  #  dimensions of the chess board
 SQUARE_SIZE = BOARD_HEIGHT // BOARD_DIMENSION  # size of each square on the board
 MAX_FPS = 30  # game loop frequency and animation cycles
 PIECE_IMAGES = {}
-global colors
+global colors, game_mode, HEADER_HEIGHT, manual_scroll # some global constants used
+# scroll variables
+MOVE_LOG_SCROLL_OFFSET = 0
+MOVE_LOG_SCROLL_SPEED = 50 # Pixels per scroll step
+
 
 '''
 Initialising a global dictionary of images. The function will be called once in main
@@ -36,6 +40,7 @@ Main driver code to handle user move input and update the graphics according to 
 
 def main():
     # Initialize pygame
+    global MOVE_LOG_SCROLL_OFFSET, manual_scroll, HEADER_HEIGHT
     pyg.init()
     screen = pyg.display.set_mode((BOARD_WIDTH + MOVE_LOG_PANEL_WIDTH, BOARD_HEIGHT))
     pyg.display.set_caption("Chess Engine")
@@ -43,7 +48,8 @@ def main():
     screen.fill(pyg.Color('white'))
     game_state = ChessEngine.GameState()
     validMoves = game_state.GetValidMoves()
-    MoveLogFont = pyg.font.SysFont("Tahoma", 14, False, False)
+    MoveLogFont = pyg.font.SysFont("Tahoma", 22, False, False)
+    info_font = pyg.font.SysFont("Arial", 20, bold=True)
     moveMade = False  # flag variable for when a move is made so that validMoves are generated only when one side makes a move
     animate = False # flag variable for when the move animation should be animated or not
     LoadImages()  # loaded only once before the game loop
@@ -52,9 +58,15 @@ def main():
     player_clicks = []  #keeps track of player clicks
     gameOver = False # flag to indicate the game is over
     # Can also be used to change the piece by which the player or the AI plays
-    Human = True # Flag to indicate if the human is playing with white, False if AI is playing
-    P2_AI = False # Same as above flag but for AI
-    # For 2 AIs this will false and false
+    Human = False # Flag to indicate if the human is playing with white, False if AI is playing
+    P2_AI = True # Same as above flag but for AI
+    # For 2 AIs this will be True and False
+
+    # Some Constants Used
+    line_height = MoveLogFont.get_height() + 5 # for DrawMoveLog()
+    HEADER_HEIGHT = 85 + (info_font.get_height() + 2) * 2 # for DrawMoveLog()
+    MOVE_LOG_SCROLL_OFFSET = 0
+    manual_scroll = False
     while running:
         human_turn = (game_state.whiteToMove and Human) or (not game_state.whiteToMove and not P2_AI)
         for event in pyg.event.get():
@@ -91,6 +103,15 @@ def main():
 
                         if not moveMade:
                             player_clicks = [square_selected]
+            # move log rendering
+            elif event.type == pyg.MOUSEWHEEL and pyg.Rect(BOARD_WIDTH, 0, MOVE_LOG_PANEL_WIDTH, MOVE_LOG_PANEL_HEIGHT).collidepoint(pyg.mouse.get_pos()):
+                # Scrolling the move log panel
+                manual_scroll = True # true only if mouse over move log panel
+                MOVE_LOG_SCROLL_OFFSET -= event.y * MOVE_LOG_SCROLL_SPEED
+                num_move_pairs = (len(game_state.moveLog) + 1) // 2
+                panel_height = num_move_pairs * line_height
+                visible_area = MOVE_LOG_PANEL_HEIGHT - HEADER_HEIGHT
+                MOVE_LOG_SCROLL_OFFSET = max(0, min(MOVE_LOG_SCROLL_OFFSET, max(0, panel_height - visible_area)))
 
             # Key Handler
             elif event.type == pyg.KEYDOWN:
@@ -120,9 +141,19 @@ def main():
             validMoves = game_state.GetValidMoves() # for moves to be made
             moveMade = False
             animate = False
+            manual_scroll = False # reset scroll when a new move is made
+            # for updating moveLog panel
+            num_move_pairs = (len(game_state.moveLog) + 1) // 2
+            panel_height = num_move_pairs * line_height
+            visible_area = MOVE_LOG_PANEL_HEIGHT - HEADER_HEIGHT
+            if panel_height > visible_area:
+                MOVE_LOG_SCROLL_OFFSET = panel_height - visible_area
+            else:
+                MOVE_LOG_SCROLL_OFFSET = 0 # no scrolling needed if content withing moveLog panel
 
-        # Update the screen with the current game state
-        DrawGameState(screen, game_state, validMoves, square_selected, MoveLogFont)
+        # Update the screen with the current game state and move log
+        DrawGameState(screen, game_state, validMoves, square_selected)
+        DrawMoveLog(screen, game_state,MoveLogFont, Human, P2_AI)
 
         # Checking EndGameStatus like checkmate, stalemate, Material count, 3-fold repetition
         # and fifty move draw to see if the game is over
@@ -139,12 +170,10 @@ def main():
 The following function is responsible for all the graphics with the current game state
 '''
 
-def DrawGameState(screen, game_state, validMoves, square_selected, MoveLogFont):
+def DrawGameState(screen, game_state, validMoves, square_selected):
     DrawBoard(screen)  # draw the game board which are the squares
     HighlightSquares(screen, game_state, validMoves, square_selected)  # highlight the possible moves at the current game state
     DrawPieces(screen, game_state.board)  # draw the pieces on the board
-    DrawMoveLog(screen, game_state, MoveLogFont) # draw the move log for the moves done next to board
-
 
 '''
 Draw squares on the board using current GameState.Board
@@ -298,30 +327,66 @@ def DrawEndGameText(screen, text):
 '''
 Function to draw move log next to the board
 '''
-def DrawMoveLog(screen, game_state, font):
+def DrawMoveLog(screen, game_state, font, Human_Flag, AI_Flag):
+    global game_mode, MOVE_LOG_SCROLL_OFFSET
+    header_font = pyg.font.SysFont("Arial", 26, bold=True)
+    info_font = pyg.font.SysFont("Arial",20, bold=True)
+
+    # Move Log Panel
     MoveLogRect = pyg.Rect(BOARD_WIDTH, 0, MOVE_LOG_PANEL_WIDTH, MOVE_LOG_PANEL_HEIGHT)
     pyg.draw.rect(screen, pyg.Color('black'), MoveLogRect)
+
+    # heading
+    header_height = 70 + (info_font.get_height() + 2) * 2  # 70 for heading + 2 extra lines
+    heading_text = font.render("Chess Game", True, pyg.Color("White"))
+    screen.blit(heading_text, (BOARD_WIDTH + 5, 5)) # 5 px padding from top/left
+
+    # Info Lines
+    if Human_Flag and AI_Flag:
+        game_mode = "Player vs AI"
+    elif not Human_Flag  and AI_Flag == True:
+        game_mode = "AI vs AI"
+    elif Human_Flag and not AI_Flag:
+        game_mode = "Player vs Player"
+    turn = "White to Move" if game_state.whiteToMove else "Black to Move"
+    move_count = len(game_state.moveLog) // 2 + 1
+    info_str1 = "Move History"
+    info_str2 = f"| {game_mode} | {turn} |"
+    info_str3 = f"Move {move_count}"
+    # Rendering Info Lines
+    info_y = 5 + header_font.get_height() + 2 # Starting below heading
+    line_spacing = info_font.get_height() + 2 # Space between lines
+
+    screen.blit(info_font.render(info_str1, True, pyg.Color("white")), (BOARD_WIDTH + 5, info_y))
+    screen.blit(info_font.render(info_str2, True, pyg.Color("white")), (BOARD_WIDTH + 5, info_y + line_spacing))
+    screen.blit(info_font.render(info_str3, True, pyg.Color("white")), (BOARD_WIDTH + 5, info_y + 2 * line_spacing))
+
+    # Move List
     move_log = game_state.moveLog
     Move_Texts = []
+    # Pair moves (white and black) with move numbers
     for i in range(0, len(move_log), 2): # step by 2
-        move_string =  str(i // 2 + 1) + ")" + " " + str(move_log[i]) + " "
-        if i + 1 < len(move_log): # to make sure black made a move
-            move_string += str(move_log[i + 1]) + " "
-        Move_Texts.append(move_string)
+        move_number =  str(i // 2 + 1) + "." # move counter
+        white_move = str(move_log[i]) if i < len(move_log) else "" # white move (half move)
+        black_move = str(move_log[i + 1]) if i + 1 < len(move_log) else "" # black move (half move)
+        Move_Texts.append((move_number, white_move, black_move))
 
-    moves_per_row = 3 # variable
-    padding = 5
-    text_Y = padding
-    line_spacing = 5
-    for i in range(0, len(Move_Texts), moves_per_row):
-        text = ""
-        for j in range(moves_per_row):
-            if i + j < len(Move_Texts):
-                text += Move_Texts[i + j]
-        TextObj = font.render(text, True, pyg.Color('white'))
-        TextLocation = MoveLogRect.move(padding, text_Y)
-        screen.blit(TextObj, TextLocation)
-        text_Y += TextObj.get_height() + line_spacing
+    # defining the move column widths and line heights
+    move_num_width = 40 # Move number column width
+    move_width = 50 # Move column width for each move
+    line_height = font.get_height() + 5 # 5 pixels of vertical spacing between lines
+
+    # Rendering the visible moves now based on the scroll offset
+    y_axis = header_height - MOVE_LOG_SCROLL_OFFSET # start position adjusted
+    for move_number, white_move, black_move in Move_Texts:
+        if y_axis + line_height > header_height and y_axis < MOVE_LOG_PANEL_HEIGHT: # now we check if the row is withing visible region
+            # Render the move contents
+            screen.blit(font.render(move_number,True, pyg.Color('white')), (BOARD_WIDTH + 5, y_axis))
+            screen.blit(font.render(white_move, True, pyg.Color('white')), (BOARD_WIDTH + 10 + move_num_width, y_axis))
+            screen.blit(font.render(black_move, True, pyg.Color('white')), (BOARD_WIDTH + 25 + move_num_width + move_width, y_axis))
+
+        y_axis += line_height # Move next row
+
 
 if __name__ == "__main__":
     main()
