@@ -329,7 +329,7 @@ def main():
 
         # AI Move Generation
         if not gameOver and not human_turn:
-            AI_Move = ChessAI.FindBestMove_MinMax(game_state, validMoves) # changeable function
+            AI_Move = ChessAI.RandomChessMove(validMoves) # changeable function
             if AI_Move is None:
                 AI_Move = ChessAI.RandomChessMove(validMoves)
             game_state.MakeMove(AI_Move)
@@ -492,7 +492,8 @@ def HighlightSquares(screen, game_state, validMoves, square_selected):
         start_square_row, start_square_col = prev_move.startRow , prev_move.startCol
         end_square_row, end_square_col = prev_move.endRow, prev_move.endCol
         screen.blit(surface, (start_square_col * SQUARE_SIZE, start_square_row * SQUARE_SIZE)) # highlight start square
-        screen.blit(surface, (end_square_col * SQUARE_SIZE, end_square_row * SQUARE_SIZE)) # highlight end square
+        screen.blit(surface, (end_square_col * SQUARE_SIZE, start_square_row * SQUARE_SIZE)) # highlight end square
+
 
 
 
