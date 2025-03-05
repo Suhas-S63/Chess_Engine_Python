@@ -329,7 +329,7 @@ def main():
 
         # AI Move Generation
         if not gameOver and not human_turn:
-            AI_Move = ChessAI.RandomChessMove(validMoves) # changeable function
+            AI_Move = ChessAI.FindBestMove_NegaMax_AB_Pruning(game_state, validMoves) # changeable function
             if AI_Move is None:
                 AI_Move = ChessAI.RandomChessMove(validMoves)
             game_state.MakeMove(AI_Move)

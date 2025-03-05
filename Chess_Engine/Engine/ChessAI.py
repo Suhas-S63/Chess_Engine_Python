@@ -1,12 +1,13 @@
 import random
 
-global next_move, counter
+next_move = None
+counter = 0
 
 # Piece Scores as per Chess rules
 pieceScore = {"K": 200, "Q": 9, "R": 5, "B": 3, "N": 3, "P": 1}
 CHECKMATE = 1000
 STALEMATE = 0
-DEPTH = 2
+DEPTH = 3
 
 '''
 Choosing a random move from the validMoves list
@@ -95,9 +96,9 @@ its purpose is to call the initial recursive call to FindMove_MinMax() and retur
 def FindBestMove_MinMax(game_state, validMoves):
     global next_move, counter
     next_move = None # default
+    counter = 0
     random.shuffle(validMoves)
     FindMove_MinMax(game_state, validMoves, DEPTH, game_state.whiteToMove)
-    counter = 0
     print(f"Position's seen by Recursive MinMax Algorithm: {counter}")
     return next_move
 
@@ -117,7 +118,7 @@ def FindMove_NegaMax(game_state, validMoves, depth, turn_multiplier):
     max_score = -CHECKMATE
     for move in validMoves:
         game_state.MakeMove(move)
-        next_moves = game_state.GetValidMoves
+        next_moves = game_state.GetValidMoves()
         score = -FindMove_NegaMax(game_state, next_moves, depth - 1, -turn_multiplier)
         if score > max_score:
             max_score = score
@@ -133,9 +134,9 @@ its purpose is to call the initial recursive call to FindMove_NegaMax() and retu
 def FindBestMove_NegaMax(game_state, validMoves):
     global next_move, counter
     next_move = None # default
+    counter = 0
     random.shuffle(validMoves)
     FindMove_NegaMax(game_state, validMoves, DEPTH, 1 if game_state.whiteToMove else -1)
-    counter = 0
     print(f"Position's seen by NegaMax Algorithm: {counter}")
     return next_move
 
@@ -153,7 +154,7 @@ def FindMove_NegaMax_AB_Pruning(game_state, validMoves, depth, alpha, beta, turn
     max_score = -CHECKMATE
     for move in validMoves:
         game_state.MakeMove(move)
-        next_moves = game_state.GetValidMoves
+        next_moves = game_state.GetValidMoves()
         score = -FindMove_NegaMax_AB_Pruning(game_state, next_moves, depth - 1, -beta, -alpha,  -turn_multiplier) # switching alpha and beta for the opponent moves
         if score > max_score:
             max_score = score
@@ -174,10 +175,10 @@ its purpose is to call the initial recursive call to FindMove_NegaMax_AB_Pruning
 def FindBestMove_NegaMax_AB_Pruning(game_state, validMoves):
     global next_move, counter
     next_move = None # default
+    counter = 0
     random.shuffle(validMoves)
     FindMove_NegaMax_AB_Pruning(game_state, validMoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if game_state.whiteToMove else -1)
     # in the above function call -CHECKMATE is the alpha value and CHECKMATE is the beta value
-    counter = 0
     print(f"Position's seen by NegaMax AB Pruning Algorithm: {counter}")
     return next_move
 
@@ -203,6 +204,8 @@ def BoardScore(game_state):
                 score += pieceScore[square[1]]
             elif square[0] == 'b':
                 score -= pieceScore[square[1]]
+
+    return score
 
 
 '''
