@@ -31,10 +31,10 @@ def IntroScreen():
     clock = pyg.time.Clock()
 
     # Colors
-    INTRO_BG_COLOR = pyg.Color("#bb2649")  # Vivian Magenta
+    INTRO_BG_COLOR = pyg.Color("#c902bf")  # Dark Violet Purple
     TEXT_COLOR = pyg.Color("#ecf0f1")      # Light gray
-    BUTTON_COLOR = pyg.Color("#3498db")    # Blue
-    HOVER_COLOR = pyg.Color("#2980b9")     # Darker blue
+    BUTTON_COLOR = pyg.Color("#1d1340")    # Darker Blue
+    HOVER_COLOR = pyg.Color("#a480f2")     # Lighter purple
     SELECTED_COLOR = pyg.Color("#e67e22")  # Orange
     PLAY_COLOR = pyg.Color("#2ecc71")      # Green
     PLAY_HOVER_COLOR = pyg.Color("#27ae60") # Darker green
@@ -42,14 +42,14 @@ def IntroScreen():
     # Fonts
     title_font = pyg.font.SysFont("Georgia", 72, bold=True)
     subtitle_font = pyg.font.SysFont("Georgia", 24)
-    label_font = pyg.font.SysFont("Georgia", 24)
+    label_font = pyg.font.SysFont("Georgia", 25)
     button_font = pyg.font.SysFont("Georgia", 26, bold=True)
 
     # Board color schemes
     board_colors = {
-        "Tournament Standard": [("lightyellow", pyg.Color(238, 238, 210)), ("darkgreen", pyg.Color(118, 150, 86))],
+        "Tournament Standard": [("lightyellow", pyg.Color(238, 238, 210)), ("darkgreen", pyg.Color(105, 146, 62))],
         "Classic Wood": [("lighttan", pyg.Color(240, 217, 181)), ("darkbrown", pyg.Color(181, 136, 99))],
-        "Chess.com Inspired": [("goldenyellow", pyg.Color(242, 202, 92)), ("burgundy", pyg.Color(102, 0, 0))],
+        "Pine-Mahogany": [("goldenyellow", pyg.Color(242, 202, 92)), ("burgundy", pyg.Color(102, 0, 0))],
         "Modern Glass": [("white", pyg.Color(255, 255, 255)), ("lightskyblue", pyg.Color(135, 206, 250))],
         "Playful Pink": [("lightpink", pyg.Color(255, 182, 193)), ("hotpink", pyg.Color(255, 105, 180))],
         "Smoggy White": [("white", pyg.Color("white")), ("gray", pyg.Color("gray"))]
@@ -316,6 +316,7 @@ def main():
                     game_state.UndoMove()
                     moveMade = True
                     animate = False
+                    gameOver = False
 
                 if event.key == pyg.K_r: # Reset the game by setting the game state to default
                     game_state = ChessEngine.GameState()
@@ -324,10 +325,13 @@ def main():
                     player_clicks = []
                     moveMade = False
                     animate = False
+                    gameOver = False
 
         # AI Move Generation
         if not gameOver and not human_turn:
-            AI_Move = ChessAI.RandomChessMove(validMoves)
+            AI_Move = ChessAI.FindBestMove_MinMax(game_state, validMoves) # changeable function
+            if AI_Move is None:
+                AI_Move = ChessAI.RandomChessMove(validMoves)
             game_state.MakeMove(AI_Move)
             moveMade = True
             animate = True
@@ -479,6 +483,18 @@ def HighlightSquares(screen, game_state, validMoves, square_selected):
         surface.fill(pyg.Color('darkorange1'))
         screen.blit(surface, (kingCol * SQUARE_SIZE, kingRow * SQUARE_SIZE))
 
+    # Highlighting the last move's starting and ending positions
+    if game_state.moveLog: # to heck if moveLog is filled
+        # square highlight color
+        surface.fill(pyg.Color('gold1'))
+
+        prev_move = game_state.moveLog[-1] # Getting the recent move
+        start_square_row, start_square_col = prev_move.startRow , prev_move.startCol
+        end_square_row, end_square_col = prev_move.endRow, prev_move.endCol
+        screen.blit(surface, (start_square_col * SQUARE_SIZE, start_square_row * SQUARE_SIZE)) # highlight start square
+        screen.blit(surface, (end_square_col * SQUARE_SIZE, end_square_row * SQUARE_SIZE)) # highlight end square
+
+
 
 '''
 Function for animating the piece movement from selected to destination square
@@ -529,7 +545,7 @@ def DrawMoveLog(screen, game_state, font, Human_Flag, AI_Flag):
 
     # Move Log Panel
     MoveLogRect = pyg.Rect(BOARD_WIDTH, 0, MOVE_LOG_PANEL_WIDTH, MOVE_LOG_PANEL_HEIGHT)
-    pyg.draw.rect(screen, pyg.Color('black'), MoveLogRect)
+    pyg.draw.rect(screen, pyg.Color('#2c2b29'), MoveLogRect)
 
     # heading
     header_height = 70 + (info_font.get_height() + 2) * 2  # 70 for heading + 2 extra lines

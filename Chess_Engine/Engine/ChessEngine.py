@@ -186,7 +186,7 @@ class GameState:
                     self.board[move.endRow][move.endCol - 2] = self.board[move.endRow][move.endCol + 1]
                     self.board[move.endRow][move.endCol + 1] = '--'
 
-            #Flag reset
+            #Flag reset(possible use by AI)
             self.Checkmate = False
             self.Stalemate = False
 
