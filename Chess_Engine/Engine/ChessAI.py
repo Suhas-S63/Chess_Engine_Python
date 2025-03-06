@@ -1,4 +1,5 @@
 import random
+import numpy as np
 
 next_move = None
 counter = 0
@@ -7,65 +8,79 @@ counter = 0
 pieceScore = {"K": 200, "Q": 9, "R": 5, "B": 3, "N": 3, "P": 1}
 CHECKMATE = 1000
 STALEMATE = 0
-DEPTH = 3
+DEPTH = 4
 
 # defining piece influence value/weights for improved evaluation
-KnightScores = [[1, 1, 1, 1, 1, 1, 1, 1],
+KnightScores = np.array([
+                [1, 1, 1, 1, 1, 1, 1, 1],
                 [1, 2, 2, 2, 2, 2, 2, 1],
                 [1, 2, 3, 3, 3, 3, 2, 1],
                 [1, 2, 3, 4, 4, 3, 2, 1],
                 [1, 2, 3, 4, 4, 3, 2, 1],
                 [1, 2, 3, 3, 3, 3, 2, 1],
                 [1, 2, 2, 2, 2, 2, 2, 1],
-                [1, 1, 1, 1, 1, 1, 1, 1]]
+                [1, 1, 1, 1, 1, 1, 1, 1]
+            ])
 
-BishopScores = [[4, 3, 2, 1, 1, 2, 3, 4],
+BishopScores = np.array([
+                [4, 3, 2, 1, 1, 2, 3, 4],
                 [3, 4, 3, 2, 2, 3, 4, 3],
                 [2, 3, 4, 3, 3, 4, 3, 2],
                 [1, 2, 3, 4, 4, 3, 2, 1],
                 [1, 2, 3, 4, 4, 3, 2, 1],
                 [2, 3, 4, 3, 3, 4, 3, 2],
                 [3, 4, 3, 2, 2, 3, 4, 3],
-                [4, 3, 2, 1, 1, 2, 3, 4]]
+                [4, 3, 2, 1, 1, 2, 3, 4]
+            ])
 
-RookScores = [[4, 3, 4, 4, 4, 4, 3, 4],
+RookScores = np.array([
+              [4, 3, 4, 4, 4, 4, 3, 4],
               [4, 4, 4, 4, 4, 4, 4, 4],
               [1, 1, 2, 3, 3, 2, 1, 1],
               [1, 2, 3, 4, 4, 3, 2, 1],
               [1, 2, 3, 4, 4, 3, 2, 1],
               [1, 1, 2, 3, 3, 2, 1, 1],
               [4, 4, 4, 4, 4, 4, 4, 4],
-              [4, 3, 4, 4, 4, 4, 3, 4]]
+              [4, 3, 4, 4, 4, 4, 3, 4]
+            ])
 
-QueenScores = [[1, 1, 1, 3, 1, 1, 1, 1],
+QueenScores = np.array([
+               [1, 1, 1, 3, 1, 1, 1, 1],
                [1, 2, 3, 3, 3, 1, 1, 1],
                [1, 4, 3, 3, 3, 4, 2, 1],
                [1, 2, 3, 3, 3, 2, 2, 1],
                [1, 2, 3, 3, 3, 2, 2, 1],
                [1, 4, 3, 3, 3, 4, 2, 1],
                [1, 2, 3, 3, 3, 1, 1, 1],
-               [1, 1, 1, 3, 1, 1, 1, 1]]
+               [1, 1, 1, 3, 1, 1, 1, 1]
+            ])
 
-KingScores = [[]]
+KingScores = np.array([
+               []
+            ])
 
-WhitePawnScores = [[8, 8, 8, 8, 8, 8, 8, 8],
+WhitePawnScores = np.array([
+                   [8, 8, 8, 8, 8, 8, 8, 8],
                    [8, 8, 8, 8, 8, 8, 8, 8],
                    [5, 6, 6, 7, 7, 6, 6, 5],
                    [2, 3, 3, 5, 5, 3, 3, 2],
                    [1, 2, 3, 4, 4, 3, 2, 1],
                    [1, 1, 2, 3, 3, 2, 1, 1],
                    [1, 1, 1, 0, 0, 1, 1, 1],
-                   [0, 0, 0, 0, 0, 0, 0, 0]]
+                   [0, 0, 0, 0, 0, 0, 0, 0]
+                ])
 
 
-BlackPawnScores = [[0, 0, 0, 0, 0, 0, 0, 0],
+BlackPawnScores = np.array([
+                   [0, 0, 0, 0, 0, 0, 0, 0],
                    [1, 1, 1, 0, 0, 1, 1, 1],
                    [1, 1, 2, 3, 3, 2, 1, 1],
                    [1, 2, 3, 4, 4, 3, 2, 1],
                    [2, 3, 3, 5, 5, 3, 3, 2],
                    [5, 6, 6, 7, 7, 6, 6, 5],
                    [8, 8, 8, 8, 8, 8, 8, 8],
-                   [8, 8, 8, 8, 8, 8, 8, 8]]
+                   [8, 8, 8, 8, 8, 8, 8, 8]
+                ])
 
 Piece_Influence_Scores = {"N" : KnightScores, "B": BishopScores, "R": RookScores, "Q": QueenScores,
                           "K": KingScores, "wP": WhitePawnScores, "bP": BlackPawnScores }
@@ -103,7 +118,7 @@ def FindBestMove(game_state, validMoves):
                 elif game_state.Stalemate:
                     score = STALEMATE
                 else:
-                    score = -turn_multiplier * scoreMaterial(game_state.board)
+                    score = -turn_multiplier * scoreMaterial(game_state.board_array)
                 if score > opponent_max_score:
                     opponent_max_score = score
                 game_state.UndoMove()
@@ -122,7 +137,7 @@ def MinMax(game_state, validMoves, depth, whiteToMove):
     global next_move, counter
     counter += 1 # Counting the number of position states visited
     if depth == 0:
-        return scoreMaterial(game_state.board)
+        return BoardScore(game_state.board_array)
 
     if whiteToMove:
         max_score = -CHECKMATE
@@ -262,17 +277,17 @@ def BoardScore(game_state):
 
     # Based on pure captures and board material
     score = 0
-    for row in range(len(game_state.board)):
-        for col in range(len(game_state.board[row])):
-            square = game_state.board[row][col]
+    for row in range(len(game_state.board_array)):
+        for col in range(len(game_state.board_array[row])):
+            square = game_state.board_array[row, col]
             if square != "--":
                 piece_position_score = 0  # Initialize score for positioning of piece
-                # Scoring positionally based on  piece
+                # Scoring positionally based on  piece (Need to change)
                 if square[1] != "K":
                     if square[1] == "P": # For pawns
-                        piece_position_score = Piece_Influence_Scores[square][row][col]
+                        piece_position_score = Piece_Influence_Scores[square][row, col]
                     else: # For other pieces
-                        piece_position_score = Piece_Influence_Scores[square[1]][row][col]
+                        piece_position_score = Piece_Influence_Scores[square[1]][row, col]
 
                 if square[0] == 'w':
                     score += pieceScore[square[1]] + piece_position_score

@@ -2,6 +2,7 @@
 Main driver file. The file will be handling user move input and display current game state object
 """
 import pygame as pyg
+import numpy as np
 import ChessEngine, ChessAI
 from multiprocessing import Process, Queue
 
@@ -288,12 +289,12 @@ def main():
                     if len(player_clicks) == 2 and human_turn:  # after 2nd click which is selecting the target square
                         start_square = player_clicks[0]
                         end_square = player_clicks[1]
-                        piece_moved = game_state.board[start_square[0]][start_square[1]]
+                        piece_moved = game_state.board_array[start_square[0], start_square[1]]
                         if piece_moved[1] == 'P' and end_square[0] == (0 if game_state.whiteToMove else 7):
                             selected_piece = DrawPawnPromotionWindow(screen, piece_moved[0])
-                            move = ChessEngine.Move(start_square, end_square, game_state.board, Promotion_Piece=selected_piece)
+                            move = ChessEngine.Move(start_square, end_square, game_state.board_array, Promotion_Piece=selected_piece)
                         else:
-                            move = ChessEngine.Move(start_square, end_square, game_state.board)
+                            move = ChessEngine.Move(start_square, end_square, game_state.board_array)
                         for i in range(len(validMoves)):
                             if move == validMoves[i]:
                                 game_state.MakeMove(validMoves[i])
@@ -361,7 +362,7 @@ def main():
 
         if moveMade:  #checking so that when move is undone and new set of moves are generated
             if animate:
-                MoveAnimation(game_state.moveLog[-1], screen, game_state.board, clock, board_colors)
+                MoveAnimation(game_state.moveLog[-1], screen, game_state.board_array, clock, board_colors)
             validMoves = game_state.GetValidMoves() # for moves to be made
             moveMade = False
             animate = False
@@ -398,7 +399,7 @@ The following function is responsible for all the graphics with the current game
 def DrawGameState(screen, game_state, validMoves, square_selected, board_colors):
     DrawBoard(screen, board_colors)  # draw the game board which are the squares
     HighlightSquares(screen, game_state, validMoves, square_selected)  # highlight the possible moves at the current game state
-    DrawPieces(screen, game_state.board)  # draw the pieces on the board
+    DrawPieces(screen, game_state.board_array)  # draw the pieces on the board
 
 '''
 Draw squares on the board using current GameState.Board
@@ -416,7 +417,7 @@ Draw squares on the board
 def DrawPieces(screen, board):
     for row in range(BOARD_DIMENSION):
         for col in range(BOARD_DIMENSION):
-            piece = board[row][col]
+            piece = board[row, col]
             if piece != '--':  # not an empy space
                 screen.blit(PIECE_IMAGES[piece],
                             pyg.Rect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
@@ -475,8 +476,8 @@ def HighlightSquares(screen, game_state, validMoves, square_selected):
     # highlighting on normal and danger squares
     if square_selected != ():
         row, col = square_selected
-        piece = game_state.board[row][col]
-        if game_state.board[row][col][0] == ('w' if game_state.whiteToMove else 'b'): # square selected is the piece that can be moved based on turns
+        piece = game_state.board_array[row, col]
+        if game_state.board_array[row, col][0] == ('w' if game_state.whiteToMove else 'b'): # square selected is the piece that can be moved based on turns
             # Highlight the square (semi transparent surface)
             surface.fill(pyg.Color('slateblue1'))
             screen.blit(surface, (col * SQUARE_SIZE, row * SQUARE_SIZE))
@@ -516,9 +517,7 @@ def HighlightSquares(screen, game_state, validMoves, square_selected):
         start_square_row, start_square_col = prev_move.startRow , prev_move.startCol
         end_square_row, end_square_col = prev_move.endRow, prev_move.endCol
         screen.blit(surface, (start_square_col * SQUARE_SIZE, start_square_row * SQUARE_SIZE)) # highlight start square
-        screen.blit(surface, (end_square_col * SQUARE_SIZE, start_square_row * SQUARE_SIZE)) # highlight end square
-
-
+        screen.blit(surface, (end_square_col * SQUARE_SIZE, end_square_row * SQUARE_SIZE))  # highlight end square
 
 
 '''
