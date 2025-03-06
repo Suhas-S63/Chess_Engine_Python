@@ -3,6 +3,7 @@ Main driver file. The file will be handling user move input and display current 
 """
 import pygame as pyg
 import ChessEngine, ChessAI
+from multiprocessing import Process, Queue
 
 # Constants for Chess Board and Move Log Panel
 BOARD_WIDTH = BOARD_HEIGHT = 640
@@ -12,7 +13,7 @@ BOARD_DIMENSION = 8  #  dimensions of the chess board
 SQUARE_SIZE = BOARD_HEIGHT // BOARD_DIMENSION  # size of each square on the board
 MAX_FPS = 30  # game loop frequency and animation cycles
 PIECE_IMAGES = {}
-global colors, game_mode, HEADER_HEIGHT, manual_scroll # some global constants used
+global colors, game_mode, HEADER_HEIGHT, manual_scroll, return_queue # some global constants used
 # scroll variables
 MOVE_LOG_SCROLL_OFFSET = 0
 MOVE_LOG_SCROLL_SPEED = 50 # Pixels per scroll step
@@ -218,7 +219,7 @@ Main driver code to handle user move input and update the graphics according to 
 
 
 def main():
-    global MOVE_LOG_SCROLL_OFFSET, manual_scroll, HEADER_HEIGHT
+    global MOVE_LOG_SCROLL_OFFSET, manual_scroll, HEADER_HEIGHT, return_queue
     # Intro screen rendering and selections
     player_color, board_colors, selected_game_mode = IntroScreen()
 
@@ -236,10 +237,13 @@ def main():
     running = True  # Game loop flag
     square_selected = ()  #keeps track of last square selected, tuple to store the mouse position
     player_clicks = []  #keeps track of player clicks
+    moveUndone = False # Flag to check if move is undone (for AI purposes)
     gameOver = False # flag to indicate the game is over
     # Flags to set which entities are playing the game
     Human = False # Flag to indicate if the human is playing with white, False if AI is playing
     P2_AI = False # Same as above flag but for AI
+    AI_Thinking = False # flag to indicate if Chess AI is thinking
+    MoveFinderProcess = None
     # For 2 AIs this will be True and False
     # Setting Human and P2_AI flags based on game mode and player color
     if selected_game_mode == "Player vs Player":
@@ -271,7 +275,7 @@ def main():
                 running = False
             # Mouse event handler
             elif event.type == pyg.MOUSEBUTTONDOWN:
-                if not gameOver and human_turn:  # only when game is not over
+                if not gameOver:  # only when game is not over
                     position = pyg.mouse.get_pos()  #(x,y) coords of mouse
                     col = position[0] // SQUARE_SIZE
                     row = position[1] // SQUARE_SIZE
@@ -281,7 +285,7 @@ def main():
                     else:
                         square_selected = (row, col)
                         player_clicks.append(square_selected)  # append for both 1st and 2nd click
-                    if len(player_clicks) == 2:  # after 2nd click which is selecting the target square
+                    if len(player_clicks) == 2 and human_turn:  # after 2nd click which is selecting the target square
                         start_square = player_clicks[0]
                         end_square = player_clicks[1]
                         piece_moved = game_state.board[start_square[0]][start_square[1]]
@@ -317,6 +321,10 @@ def main():
                     moveMade = True
                     animate = False
                     gameOver = False
+                    if AI_Thinking:
+                        MoveFinderProcess.terminate()
+                        AI_Thinking = False
+                    moveUndone = True
 
                 if event.key == pyg.K_r: # Reset the game by setting the game state to default
                     game_state = ChessEngine.GameState()
@@ -326,15 +334,30 @@ def main():
                     moveMade = False
                     animate = False
                     gameOver = False
+                    if AI_Thinking:
+                        MoveFinderProcess.terminate()
+                        AI_Thinking = False
+                    moveUndone = True
 
         # AI Move Generation
-        if not gameOver and not human_turn:
-            AI_Move = ChessAI.FindBestMove_NegaMax_AB_Pruning(game_state, validMoves) # changeable function
-            if AI_Move is None:
-                AI_Move = ChessAI.RandomChessMove(validMoves)
-            game_state.MakeMove(AI_Move)
-            moveMade = True
-            animate = True
+        if not gameOver and not human_turn and not moveUndone:
+            if not AI_Thinking:
+                AI_Thinking = True
+                print("Thinking.....")
+                return_queue = Queue() # container for values withing threads, used to pass data within threads
+                MoveFinderProcess = Process(target=ChessAI.FindBestMove_NegaMax_AB_Pruning, args=(game_state, validMoves, return_queue)) # target is the function we want to call
+                MoveFinderProcess.start() # Call FindBestMove_NegaMax_AB_Pruning(game_state, validMoves, return_queue), return_queue will return the data
+
+            # checking for the process now
+            if not MoveFinderProcess.is_alive(): # when process is no longer alive
+                # print("Done Thinking")
+                AI_Move = return_queue.get() # to get the move after process is done
+                if AI_Move is None:
+                    AI_Move = ChessAI.RandomChessMove(validMoves)
+                game_state.MakeMove(AI_Move)
+                moveMade = True
+                animate = True
+                AI_Thinking = False
 
         if moveMade:  #checking so that when move is undone and new set of moves are generated
             if animate:
@@ -342,6 +365,7 @@ def main():
             validMoves = game_state.GetValidMoves() # for moves to be made
             moveMade = False
             animate = False
+            moveUndone = False
             manual_scroll = False # reset scroll when a new move is made
             # for updating moveLog panel
             num_move_pairs = (len(game_state.moveLog) + 1) // 2

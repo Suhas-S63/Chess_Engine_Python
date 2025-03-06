@@ -9,6 +9,66 @@ CHECKMATE = 1000
 STALEMATE = 0
 DEPTH = 3
 
+# defining piece influence value/weights for improved evaluation
+KnightScores = [[1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 2, 2, 2, 2, 2, 2, 1],
+                [1, 2, 3, 3, 3, 3, 2, 1],
+                [1, 2, 3, 4, 4, 3, 2, 1],
+                [1, 2, 3, 4, 4, 3, 2, 1],
+                [1, 2, 3, 3, 3, 3, 2, 1],
+                [1, 2, 2, 2, 2, 2, 2, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1]]
+
+BishopScores = [[4, 3, 2, 1, 1, 2, 3, 4],
+                [3, 4, 3, 2, 2, 3, 4, 3],
+                [2, 3, 4, 3, 3, 4, 3, 2],
+                [1, 2, 3, 4, 4, 3, 2, 1],
+                [1, 2, 3, 4, 4, 3, 2, 1],
+                [2, 3, 4, 3, 3, 4, 3, 2],
+                [3, 4, 3, 2, 2, 3, 4, 3],
+                [4, 3, 2, 1, 1, 2, 3, 4]]
+
+RookScores = [[4, 3, 4, 4, 4, 4, 3, 4],
+              [4, 4, 4, 4, 4, 4, 4, 4],
+              [1, 1, 2, 3, 3, 2, 1, 1],
+              [1, 2, 3, 4, 4, 3, 2, 1],
+              [1, 2, 3, 4, 4, 3, 2, 1],
+              [1, 1, 2, 3, 3, 2, 1, 1],
+              [4, 4, 4, 4, 4, 4, 4, 4],
+              [4, 3, 4, 4, 4, 4, 3, 4]]
+
+QueenScores = [[1, 1, 1, 3, 1, 1, 1, 1],
+               [1, 2, 3, 3, 3, 1, 1, 1],
+               [1, 4, 3, 3, 3, 4, 2, 1],
+               [1, 2, 3, 3, 3, 2, 2, 1],
+               [1, 2, 3, 3, 3, 2, 2, 1],
+               [1, 4, 3, 3, 3, 4, 2, 1],
+               [1, 2, 3, 3, 3, 1, 1, 1],
+               [1, 1, 1, 3, 1, 1, 1, 1]]
+
+KingScores = [[]]
+
+WhitePawnScores = [[8, 8, 8, 8, 8, 8, 8, 8],
+                   [8, 8, 8, 8, 8, 8, 8, 8],
+                   [5, 6, 6, 7, 7, 6, 6, 5],
+                   [2, 3, 3, 5, 5, 3, 3, 2],
+                   [1, 2, 3, 4, 4, 3, 2, 1],
+                   [1, 1, 2, 3, 3, 2, 1, 1],
+                   [1, 1, 1, 0, 0, 1, 1, 1],
+                   [0, 0, 0, 0, 0, 0, 0, 0]]
+
+
+BlackPawnScores = [[0, 0, 0, 0, 0, 0, 0, 0],
+                   [1, 1, 1, 0, 0, 1, 1, 1],
+                   [1, 1, 2, 3, 3, 2, 1, 1],
+                   [1, 2, 3, 4, 4, 3, 2, 1],
+                   [2, 3, 3, 5, 5, 3, 3, 2],
+                   [5, 6, 6, 7, 7, 6, 6, 5],
+                   [8, 8, 8, 8, 8, 8, 8, 8],
+                   [8, 8, 8, 8, 8, 8, 8, 8]]
+
+Piece_Influence_Scores = {"N" : KnightScores, "B": BishopScores, "R": RookScores, "Q": QueenScores,
+                          "K": KingScores, "wP": WhitePawnScores, "bP": BlackPawnScores }
 '''
 Choosing a random move from the validMoves list
 '''
@@ -58,7 +118,7 @@ def FindBestMove(game_state, validMoves):
 '''
 Recursive MinMax implementation for Chess AI
 '''
-def FindMove_MinMax(game_state, validMoves, depth, whiteToMove):
+def MinMax(game_state, validMoves, depth, whiteToMove):
     global next_move, counter
     counter += 1 # Counting the number of position states visited
     if depth == 0:
@@ -69,11 +129,12 @@ def FindMove_MinMax(game_state, validMoves, depth, whiteToMove):
         for move in validMoves:
             game_state.MakeMove(move)
             next_moves = game_state.GetValidMoves()
-            score = FindMove_MinMax(game_state, next_moves, depth - 1, False)
+            score = MinMax(game_state, next_moves, depth - 1, False)
             if score > max_score:
                 max_score = score
                 if depth == DEPTH:
                     next_move = move
+                    print(f"Move: {move}, Score: {score}")
             game_state.UndoMove()
         return max_score
     else:
@@ -81,11 +142,12 @@ def FindMove_MinMax(game_state, validMoves, depth, whiteToMove):
         for move in validMoves:
             game_state.MakeMove(move)
             next_moves = game_state.GetValidMoves()
-            score = FindMove_MinMax(game_state, next_moves, depth - 1, True)
+            score = MinMax(game_state, next_moves, depth - 1, True)
             if score < min_score:
                 min_score = score
                 if depth == DEPTH:
                     next_move = move
+                    print(f"Move: {move}, Score: {score}")
             game_state.UndoMove()
         return min_score
 
@@ -98,7 +160,7 @@ def FindBestMove_MinMax(game_state, validMoves):
     next_move = None # default
     counter = 0
     random.shuffle(validMoves)
-    FindMove_MinMax(game_state, validMoves, DEPTH, game_state.whiteToMove)
+    MinMax(game_state, validMoves, DEPTH, game_state.whiteToMove)
     print(f"Position's seen by Recursive MinMax Algorithm: {counter}")
     return next_move
 
@@ -109,7 +171,7 @@ def FindBestMove_MinMax(game_state, validMoves):
 '''
 NegaMax implementation of AI (Improved version of MinMax Algorithm)
 '''
-def FindMove_NegaMax(game_state, validMoves, depth, turn_multiplier):
+def NegaMax(game_state, validMoves, depth, turn_multiplier):
     global next_move, counter
     counter += 1 # Counting the number of position states visited
     if depth == 0:
@@ -119,11 +181,12 @@ def FindMove_NegaMax(game_state, validMoves, depth, turn_multiplier):
     for move in validMoves:
         game_state.MakeMove(move)
         next_moves = game_state.GetValidMoves()
-        score = -FindMove_NegaMax(game_state, next_moves, depth - 1, -turn_multiplier)
+        score = -NegaMax(game_state, next_moves, depth - 1, -turn_multiplier)
         if score > max_score:
             max_score = score
             if depth == DEPTH:
                 next_move = move
+                print(f"Move: {move}, Score: {score}")
         game_state.UndoMove()
     return max_score
 
@@ -136,7 +199,7 @@ def FindBestMove_NegaMax(game_state, validMoves):
     next_move = None # default
     counter = 0
     random.shuffle(validMoves)
-    FindMove_NegaMax(game_state, validMoves, DEPTH, 1 if game_state.whiteToMove else -1)
+    NegaMax(game_state, validMoves, DEPTH, 1 if game_state.whiteToMove else -1)
     print(f"Position's seen by NegaMax Algorithm: {counter}")
     return next_move
 
@@ -144,7 +207,7 @@ def FindBestMove_NegaMax(game_state, validMoves):
 '''
 NegaMax with Alpha-Beta pruning implementation 
 '''
-def FindMove_NegaMax_AB_Pruning(game_state, validMoves, depth, alpha, beta, turn_multiplier): # alpha -> Upper bound value, beta -> Lower bound value
+def NegaMax_AB_Pruning(game_state, validMoves, depth, alpha, beta, turn_multiplier): # alpha -> Upper bound value, beta -> Lower bound value
     global next_move, counter
     counter += 1 # Counting the number of position states visited
     if depth == 0:
@@ -155,11 +218,12 @@ def FindMove_NegaMax_AB_Pruning(game_state, validMoves, depth, alpha, beta, turn
     for move in validMoves:
         game_state.MakeMove(move)
         next_moves = game_state.GetValidMoves()
-        score = -FindMove_NegaMax_AB_Pruning(game_state, next_moves, depth - 1, -beta, -alpha,  -turn_multiplier) # switching alpha and beta for the opponent moves
+        score = -NegaMax_AB_Pruning(game_state, next_moves, depth - 1, -beta, -alpha,  -turn_multiplier) # switching alpha and beta for the opponent moves
         if score > max_score:
             max_score = score
             if depth == DEPTH:
                 next_move = move
+                print(f"Move: {move}, Score: {score}")
         game_state.UndoMove()
         # Pruning bad game state trees which don't much of an advantage
         if max_score > alpha:
@@ -172,15 +236,15 @@ def FindMove_NegaMax_AB_Pruning(game_state, validMoves, depth, alpha, beta, turn
 Helper method for NegaMax with Alpha-Beta pruning implementation  for Chess AI
 its purpose is to call the initial recursive call to FindMove_NegaMax_AB_Pruning() and return results
 '''
-def FindBestMove_NegaMax_AB_Pruning(game_state, validMoves):
+def FindBestMove_NegaMax_AB_Pruning(game_state, validMoves, return_queue):
     global next_move, counter
     next_move = None # default
     counter = 0
     random.shuffle(validMoves)
-    FindMove_NegaMax_AB_Pruning(game_state, validMoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if game_state.whiteToMove else -1)
+    NegaMax_AB_Pruning(game_state, validMoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if game_state.whiteToMove else -1)
     # in the above function call -CHECKMATE is the alpha value and CHECKMATE is the beta value
     print(f"Position's seen by NegaMax AB Pruning Algorithm: {counter}")
-    return next_move
+    return_queue.put(next_move)
 
 ############################################################################################################
 
@@ -198,12 +262,22 @@ def BoardScore(game_state):
 
     # Based on pure captures and board material
     score = 0
-    for row in game_state.board:
-        for square in row:
-            if square[0] == 'w':
-                score += pieceScore[square[1]]
-            elif square[0] == 'b':
-                score -= pieceScore[square[1]]
+    for row in range(len(game_state.board)):
+        for col in range(len(game_state.board[row])):
+            square = game_state.board[row][col]
+            if square != "--":
+                piece_position_score = 0  # Initialize score for positioning of piece
+                # Scoring positionally based on  piece
+                if square[1] != "K":
+                    if square[1] == "P": # For pawns
+                        piece_position_score = Piece_Influence_Scores[square][row][col]
+                    else: # For other pieces
+                        piece_position_score = Piece_Influence_Scores[square[1]][row][col]
+
+                if square[0] == 'w':
+                    score += pieceScore[square[1]] + piece_position_score
+                elif square[0] == 'b':
+                    score -= pieceScore[square[1]] + piece_position_score
 
     return score
 
