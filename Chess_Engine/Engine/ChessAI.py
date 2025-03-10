@@ -6,7 +6,7 @@ import os
 
 # Global variable to hold the book reader
 _book = None
-_book_path = os.path.join(os.path.dirname(__file__), "komodo.bin")
+_book_path = os.path.join(os.path.dirname(__file__), "Cerebellum3Merge.bin")
 
 next_move = None
 counter = 0
