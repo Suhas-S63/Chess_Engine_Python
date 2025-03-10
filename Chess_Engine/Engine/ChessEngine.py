@@ -915,3 +915,58 @@ class Move:
     '''
     def getRankFile(self, row, col):
         return self.colsToFiles[col] + self.rowsToRanks[row]
+
+'''
+Converting current game_state to FEN(Forsyth–Edwards Notation) string
+'''
+def game_state_to_fen(self):
+    board_array = self.board_array
+    fen_rows = []
+    # Iterate from rank 8 (row 0) to rank 1 (row 7)
+    for row in range(8):
+        empty_count = 0
+        fen_row = ''
+        for col in range(8):
+            piece = board_array[row, col]
+            if piece == '--':
+                empty_count += 1
+            else:
+                if empty_count > 0:
+                    fen_row += str(empty_count)
+                    empty_count = 0
+                fen_row += piece[1].upper() if piece[0] == 'w' else piece[1].lower()
+        if empty_count > 0:
+            fen_row += str(empty_count)
+        fen_rows.append(fen_row)
+
+    board_fen = '/'.join(fen_rows)
+    active_color = 'w' if self.whiteToMove else 'b'
+
+    # Castling rights
+    castling = ''
+    if self.CurrentCastlingRights.WhiteKSide:
+        castling += 'K'
+    if self.CurrentCastlingRights.WhiteQSide:
+        castling += 'Q'
+    if self.CurrentCastlingRights.BlackKSide:
+        castling += 'k'
+    if self.CurrentCastlingRights.BlackQSide:
+        castling += 'q'
+    if not castling:
+        castling = '-'
+
+    # En passant
+    if self.EnPassantPossible:
+        ep_row, ep_col = self.EnPassantPossible
+        ep_square = Move.colsToFiles[ep_col] + Move.rowsToRanks[ep_row]
+    else:
+        ep_square = '-'
+
+    # Halfmove and fullmove counters
+    halfmove = self.halfmoveclock
+    fullmove = len(self.moveLog) // 2 + 1
+
+    return f"{board_fen} {active_color} {castling} {ep_square} {halfmove} {fullmove}"
+
+# attaching the function to GameState class to be used in Chess AI purpose
+GameState.game_state_to_fen = game_state_to_fen

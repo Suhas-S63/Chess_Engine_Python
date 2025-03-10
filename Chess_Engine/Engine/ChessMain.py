@@ -2,7 +2,6 @@
 Main driver file. The file will be handling user move input and display current game state object
 """
 import pygame as pyg
-import numpy as np
 import ChessEngine, ChessAI
 from multiprocessing import Process, Queue
 
@@ -390,6 +389,7 @@ def main():
 
         clock.tick(MAX_FPS)
         pyg.display.flip()
+
 
 
 '''
