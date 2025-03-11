@@ -624,6 +624,9 @@ def DrawMoveLog(screen, game_state, font, Human_Flag, AI_Flag):
 
         y_axis += line_height # Move next row
 
+'''
+Function to set custom board configuration using FEN notation
+'''
 
 if __name__ == "__main__":
     main()

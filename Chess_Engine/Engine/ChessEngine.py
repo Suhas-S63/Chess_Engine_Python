@@ -46,6 +46,7 @@ class GameState:
         self.EnPassantPossible = ()  # coordinates of square where enpassant is possible
         self.EnPassantPossibleLog = [self.EnPassantPossible] # Logs to keep track of the Enpassant Capture moves
         self.halfmoveclock = 0 # tracking moves since last capture or pawn move
+        self.fullmovecounter = 1
         self.CurrentCastlingRights = CastleRights(True, True, True, True)
         self.CastleRightsLog = [CastleRights(self.CurrentCastlingRights.WhiteKSide, self.CurrentCastlingRights.BlackKSide,
                                              self.CurrentCastlingRights.WhiteQSide, self.CurrentCastlingRights.BlackQSide)]
@@ -82,6 +83,7 @@ class GameState:
                 self.black_pieces -= 1
         else:
             self.halfmoveclock += 1 # increment otherwise
+        # self.fullmovecounter = len(self.moveLog) // 2 + 1
         self.whiteToMove = not self.whiteToMove  # swap players
 
         # update King's location is moved
@@ -92,9 +94,6 @@ class GameState:
 
         # Pawn promotion logic
         if move.PawnPromotion:
-            # print(f'Pawn promotion enabled')  # UI will be done
-            # PromotedPiece = input("Promote to Queen(Q), Rook(R), Bishop(B), or Knight(N): ")  # UI will be done
-            # self.board[move.endRow][move.endCol] = move.pieceMoved[0] + PromotedPiece
             self.board_array[move.endRow, move.endCol] = move.pieceMoved[0] + move.Pawn_Promoted_to
         else:
             self.board_array[move.endRow, move.endCol] = move.pieceMoved
@@ -154,6 +153,8 @@ class GameState:
                     self.white_pieces += 1
                 else:
                     self.black_pieces += 1
+            self.halfmoveclock -= 1  # decrement
+            # self.fullmovecounter = if len(self.moveLog) > 0 len(self.moveLog) // 2 + 1 else 1
             self.whiteToMove = not self.whiteToMove  # switch turns back
 
             # update King's location if move undone

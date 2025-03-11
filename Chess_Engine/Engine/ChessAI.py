@@ -17,7 +17,7 @@ first_call = False # flag to indicate the first call for the function NegaMax AB
 pieceScore = {"K": 200, "Q": 9, "R": 5, "B": 3, "N": 3, "P": 1}
 CHECKMATE = 1000
 STALEMATE = 0
-DEPTH = 5
+DEPTH = 4
 Q_SEARCH_DEPTH = 2
 
 # Killer moves: two slots per depth (adjust MAX_DEPTH as needed)
