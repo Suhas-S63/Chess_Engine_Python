@@ -10,12 +10,15 @@ _book_path = os.path.join(os.path.dirname(__file__), "Cerebellum3Merge.bin")
 
 next_move = None
 counter = 0
+first_call = False # flag to indicate the first call for the function NegaMax AB
+
 
 # Piece Scores as per Chess rules
 pieceScore = {"K": 200, "Q": 9, "R": 5, "B": 3, "N": 3, "P": 1}
 CHECKMATE = 1000
 STALEMATE = 0
-DEPTH = 4
+DEPTH = 5
+Q_SEARCH_DEPTH = 2
 
 # Killer moves: two slots per depth (adjust MAX_DEPTH as needed)
 MAX_DEPTH = 10
@@ -247,7 +250,8 @@ def NegaMax_AB_Pruning(game_state, validMoves, depth, alpha, beta, turn_multipli
     global next_move, counter
     counter += 1 # Counting the number of position states visited
     if depth == 0:
-        return turn_multiplier * BoardScore(game_state)
+        # return turn_multiplier * BoardScore(game_state)
+        return Quiescence_Search(game_state, alpha, beta, turn_multiplier, Q_SEARCH_DEPTH)
 
     # Move ordering - has to be implemented
     ordered_moves = Move_Ordering(validMoves, depth)
@@ -274,7 +278,7 @@ Helper method for NegaMax with Alpha-Beta pruning implementation  for Chess AI
 its purpose is to call the initial recursive call to FindMove_NegaMax_AB_Pruning() and return results
 '''
 def FindBestMove_NegaMax_AB_Pruning(game_state, validMoves, return_queue):
-    global next_move, counter
+    global next_move, counter, first_call
     next_move = None # default
     counter = 0
 
@@ -289,12 +293,12 @@ def FindBestMove_NegaMax_AB_Pruning(game_state, validMoves, return_queue):
     try:
         entries = list(book.find_all(board))
         if entries:
-            # selecting a move weighted by frequency
-            # moves = [entry.move for entry in entries] # selecting a move
-            # weights = [entry.weight for entry in entries] # selecting weights of the move
-            # selected_move = random.choices(moves, weights=weights, k=1)[0] # for random book moves by selecting a move by weighted frequency
+                # selecting a move weighted by frequency
+                # moves = [entry.move for entry in entries] # selecting a move
+                # weights = [entry.weight for entry in entries] # selecting weights of the move
+                # selected_move = random.choices(moves, weights=weights, k=1)[0] # for random book moves by selecting a move by weighted frequency
             selected_move = max(entries, key = lambda e: e.weight).move # For deterministic moves
-            next_move = chess_pack_move_to_Move_class(selected_move, game_state)
+            next_move = chess_pack_move_to_Move_class(selected_move, game_state, board)
             print(f"Book move: {board.san(selected_move)}")
         else:
             # No book entries found, proceed with NegaMax with Alpha-Beta pruning
@@ -462,7 +466,7 @@ def get_book():
 The opening book returns moves in python-chess’s format,
 which we need to convert to our Move class.
 '''
-def chess_pack_move_to_Move_class(chess_move, game_state):
+def chess_pack_move_to_Move_class(chess_move, game_state, board):
     start_square = chess_move.from_square
     end_square = chess_move.to_square
     # Convert to your row indexing (0=rank8, 7=rank1)
@@ -471,4 +475,6 @@ def chess_pack_move_to_Move_class(chess_move, game_state):
     end_row = 7 - (end_square // 8)
     end_col = end_square % 8
     promotion = chess.piece_symbol(chess_move.promotion).upper() if chess_move.promotion else None
-    return Move((start_row, start_col), (end_row, end_col), game_state.board_array, Promotion_Piece=promotion)
+    is_castle = board.is_castling(chess_move)
+    is_en_passant = board.is_en_passant(chess_move)
+    return Move((start_row, start_col), (end_row, end_col), game_state.board_array,EnPassant= is_en_passant, IsCastleMove= is_castle, Promotion_Piece=promotion)
