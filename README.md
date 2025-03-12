@@ -70,7 +70,7 @@ To ensure users can set up the project smoothly, follow the included steps:
    - Required libraries / Key Dependencies include:
      - Pygame: For graphical interface ([Pygame Documentation](https://www.pygame.org/docs/))
      - NumPy: For array operations in board management ([NumPy Documentation](https://numpy.org/doc/))
-     - chess: For chess rules and AI logic, which also supports the `chess.polyglot` module for opening books ([python-chess Documentation](https://python-chess.readthedocs.io/en/latest/))
+     - chess: For chess rules and AI logic, which also supports the `chess.polyglot` module for opening books ([chess Documentation](https://pypi.org/project/chess/))
 
 4. **Opening Book File**:
    - The AI relies on an opening book file, `Cerebellum3Merge.bin`, which is not included in the repository due to size. Users must download this file from a reliable source and place it in the root directory. This step is crucial for early-game AI performance, as it uses the file for informed move selection.
