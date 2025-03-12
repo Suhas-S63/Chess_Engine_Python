@@ -1,7 +1,17 @@
-# Chess Engine in Python
+# Outwit, outplay, and checkmate—your move, genius! ♟️♔
 
+# Chess Engine in Python
 A fully functional chess engine built with Python and Pygame, designed to simulate a complete chess game with an intuitive graphical interface and robust game logic. This project includes a variety of features inspired by professional platforms like Chess.com, such as algebraic notation, scrollable move logs, and support for all standard chess rules.
 
+![ChessGif](C:/Users/suhas/PycharmProjects/Chess_Engine_Python/Chess_Engine/Engine/ChessPlay.mp4)
+
+## Project Background and Structure
+This project is a graphical chess implementation using Python, leveraging Pygame for the user interface. It comprises three main files:
+- **ChessMain.py**: Acts as the entry point, handling user inputs and displaying the game state via Pygame. It supports an intro screen for selecting player color, board color scheme, and game mode (Player vs AI, Player vs Player, AI vs AI).
+- **ChessEngine.py**: Manages the game state, including board configuration, move validation, and rules like castling and en passant, using NumPy for efficient board representation.
+- **ChessAI.py**: Implements the AI logic, offering algorithms from random moves to advanced negamax with alpha-beta pruning, enhanced by an opening book for early-game strategies.
+
+The integration of these files creates a robust chess game with visual and AI capabilities, suitable for educational purposes and casual play.
 ## Features
 
 ### Gameplay
@@ -32,40 +42,68 @@ A fully functional chess engine built with Python and Pygame, designed to simula
   - Capture notation (e.g., `exd5`).
   - Promotion (e.g., `e8=Q`).
   - Check (`+`) and checkmate (`#`) indicators.
-- **AI Opponent**: Basic random-move AI (placeholder for future enhancements).
+- **AI Opponent**: NegaMax Algorithm with Alpha-Beta Pruning. Move Ordering and Quiescence Search is also integrated for better move selection
 - **Modular Design**:
   - `ChessMain.py`: Handles the game loop, input, and rendering.
   - `ChessEngine.py`: Core logic for game state, move generation, and validation.
 
-## Installation
+## Detailed Installation and Setup Instructions
+To ensure users can set up the project smoothly, follow the included steps:
 
-### Prerequisites
-- **Python 3.6+**: Ensure Python is installed on your system.
-- **Pygame**: Required for rendering the GUI.
+1. **Cloning the Repository**:
+   - Users are instructed to clone the repository using:
+     ```bash
+     git clone https://github.com/Suhas-S63/Chess_Engine_Python.git
+     ```
 
-### Setup
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/Suhas-S63/Chess_Engine_Python.git
-   cd Chess_Engine_Python
-   ```
-2. **Install Dependencies**:
-   ```bash
-   pip install pygame
-   ```
-3. **Add Piece Images**:
-   - Place high-quality chess piece PNGs (e.g., `wP.png`, `bK.png`) in a `piece_images/` folder within the project directory.
-   - Recommended resolution: At least 128x128 pixels for smooth scaling.
-4. **Run the Game**:
-   ```bash
-   python ChessMain.py
-   ```
+2. **Virtual Environment Setup**:
+   - A virtual environment is recommended for dependency management:
+     ```bash
+     python -m venv venv
+     ```
 
-## Usage
-- **Playing**: Click squares to select and move pieces. Use the mouse wheel to scroll the move log.
-- **Undo**: Press `Z` to undo the last move.
-- **Reset**: Press `R` to start a new game.
-- **Promotion**: When a pawn reaches the last rank, a UI appears to choose a promotion piece.
+3. **Library Installation**:
+   - Dependencies are listed, and installation is facilitated via a `requirements.txt` file:
+     ```bash
+     pip install -r requirements.txt
+     ```
+   - Required libraries / Key Dependencies include:
+     - Pygame: For graphical interface ([Pygame Documentation](https://www.pygame.org/docs/))
+     - NumPy: For array operations in board management ([NumPy Documentation](https://numpy.org/doc/))
+     - chess: For chess rules and AI logic, which also supports the `chess.polyglot` module for opening books ([python-chess Documentation](https://python-chess.readthedocs.io/en/latest/))
+
+4. **Opening Book File**:
+   - The AI relies on an opening book file, `Cerebellum3Merge.bin`, which is not included in the repository due to size. Users must download this file from a reliable source and place it in the root directory. This step is crucial for early-game AI performance, as it uses the file for informed move selection.
+
+## Comprehensive Usage Instructions
+
+1. **Running the Game**:
+   - Users execute the game by running:
+     ```bash
+     python ChessMain.py
+     ```
+   - This launches the intro screen.
+
+2. **Intro Screen Options**:
+   - Users can select:
+     - Player color (White or Black), affecting who moves first.
+     - Board color scheme (e.g., Tournament Standard, Classic Wood, Modern Glass), enhancing visual appeal.
+     - Game mode, offering:
+       - Player vs AI: Human plays against the AI, with the option to choose color.
+       - Player vs Player: Two humans play, ideal for local multiplayer.
+       - AI vs AI: Observes two AIs playing, useful for testing or entertainment.
+   - Selections are made via mouse interactions, with visual feedback like hover and selected states.
+
+3. **Game Controls and Features**:
+   - **Mouse Interaction**: Click to select a piece, click again to move, and right-click to cancel, providing intuitive gameplay.
+   - **Keyboard Shortcuts**:
+     - 'Z': Undo the last move, supporting learning and analysis.
+     - 'R': Reset the game to initial positions, allowing restarts.
+   - **Move Log**: A panel displays move history, with scroll wheel support for reviewing past moves, enhancing strategic analysis.
+   - **Additional Features**: Includes pawn promotion (via a selection window), castling, en passant, and move animation for smoother visuals, all detailed in the game interface.
+
+4. **AI Details**:
+   - The AI, used in Player vs AI and AI vs AI modes, employs Negamax Alpha-Beta pruning with a search depth of 4. It also integrates an opening book for early-game moves, improving initial strategy. The search depth is fixed for now.
 
 ## Project Structure
 ```
@@ -82,13 +120,39 @@ Chess_Engine/Engine
 - **Move Validation**: Ensures all moves adhere to chess rules, including pinned pieces and king safety.
 - **Position Tracking**: Uses a dictionary to monitor game positions for threefold repetition, with plans for Zobrist hashing optimization.
 - **Smooth Rendering**: Anti-aliased images enhance visual quality, adjustable via `SQUARE_SIZE`.
+- **NegaMax Algorithm with Alpha Beta Pruning with Move Ordering and Quiescence Search**
+
+## Miscellaneous Details
+- **Code Style**: Adherence to PEP 8 for consistency, ensuring readability.
+- **Commit Messages**: Clear descriptions to facilitate review.
 
 ## Future Improvements
-- **Advanced AI**: Replace random-move AI with minimax or alpha-beta pruning.
+- **Advanced AI**: Adding a Neural Network Engine to make the AI more complex and enhanced without much dependence on Decision Algorithms like NegaMax or MiniMax.
 - **Time Controls**: Add clock functionality for timed games.
 - **Zobrist Hashing**: Optimize threefold repetition detection for performance.
+- **Using the concept of BitBoards to increase performance of engine**
+- **Changing move calculation to make it more efficient. Instead of recalculating all moves, start with moves from previous board and change based on last move made**
 
+#### Tables for Clarity
+The following table summarizes the dependencies:
 
-## **Built With**: Python and Pygame
+| Library       | Purpose                              | Installation Command [`pip` / `conda`]                      |
+|---------------|--------------------------------------|-------------------------------------------------------------|
+| Pygame        | Graphical interface                  | `pip install pygame` or `conda install conda-forge::pygame` |
+| NumPy         | Board state management               | `pip install numpy` or `conda install anaconda::numpy`      |
+| python-chess  | Chess rules and AI logic             | `pip install chess` or `conda install conda-forge::chess`   |
+
+Game modes and controls:
+
+| Game Mode        | Description                          | Controls                     |
+|------------------|--------------------------------------|------------------------------|
+| Player vs AI     | Human vs AI, choose color            | Mouse clicks, 'Z' for undo   |
+| Player vs Player | Two humans play locally              | Mouse clicks, 'R' for reset  |
+| AI vs AI         | Watch AIs play                       | Scroll wheel for move log    |
 
 ---
+
+### Key Citations
+- [Pygame Official Documentation Page](https://www.pygame.org/docs/)
+- [NumPy User Guide and Reference](https://numpy.org/doc/)
+- [chess Documentation](https://pypi.org/project/chess/)

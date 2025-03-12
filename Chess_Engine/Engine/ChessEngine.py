@@ -153,7 +153,7 @@ class GameState:
                     self.white_pieces += 1
                 else:
                     self.black_pieces += 1
-            self.halfmoveclock -= 1  # decrement
+            # self.halfmoveclock -= 1  # decrement
             # self.fullmovecounter = if len(self.moveLog) > 0 len(self.moveLog) // 2 + 1 else 1
             self.whiteToMove = not self.whiteToMove  # switch turns back
 
@@ -190,10 +190,6 @@ class GameState:
             #Flag reset(possible use by AI)
             self.Checkmate = False
             self.Stalemate = False
-
-    def RedoMove(self):
-        pass
-
 
     '''
     Get all moves considering checks of the pieces
