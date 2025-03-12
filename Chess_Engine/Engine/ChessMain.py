@@ -24,9 +24,9 @@ Function to create an Intro screen for the game
 def IntroScreen():
     pyg.init()
     # Constants
-    INTRO_WIDTH, INTRO_HEIGHT = 1100, 700
-    PADDING, SPACING = 20, 10
-    BUTTON_HEIGHT = 60
+    INTRO_WIDTH, INTRO_HEIGHT = 1100, 600
+    PADDING, SPACING = 10, 5
+    BUTTON_HEIGHT = 45
     screen = pyg.display.set_mode((INTRO_WIDTH, INTRO_HEIGHT))
     pyg.display.set_caption("Chess Engine - Intro Screen")
     clock = pyg.time.Clock()
@@ -41,10 +41,10 @@ def IntroScreen():
     PLAY_HOVER_COLOR = pyg.Color("#27ae60") # Darker green
 
     # Fonts
-    title_font = pyg.font.SysFont("Georgia", 72, bold=True)
-    subtitle_font = pyg.font.SysFont("Georgia", 24)
-    label_font = pyg.font.SysFont("Georgia", 25)
-    button_font = pyg.font.SysFont("Georgia", 26, bold=True)
+    title_font = pyg.font.SysFont("Georgia", 52, bold=True)
+    subtitle_font = pyg.font.SysFont("Georgia", 21)
+    label_font = pyg.font.SysFont("Georgia", 23)
+    button_font = pyg.font.SysFont("Georgia", 23, bold=True)
 
     # Board color schemes
     board_colors = {
