@@ -3,7 +3,7 @@
 # Chess Engine in Python
 A fully functional chess engine built with Python and Pygame, designed to simulate a complete chess game with an intuitive graphical interface and robust game logic. This project includes a variety of features inspired by professional platforms like Chess.com, such as algebraic notation, scrollable move logs, and support for all standard chess rules.
 
-![ChessGif](C:/Users/suhas/PycharmProjects/Chess_Engine_Python/Chess_Engine/Engine/ChessPlay.mp4)
+![ChessGif](https://github.com/Suhas-S63/Chess_Engine_Python/blob/main/Chess_Engine/Engine/ChessPlay.mp4)
 
 ## Project Background and Structure
 This project is a graphical chess implementation using Python, leveraging Pygame for the user interface. It comprises three main files:
