@@ -140,7 +140,7 @@ The following table summarizes the dependencies:
 |---------------|--------------------------------------|-------------------------------------------------------------|
 | Pygame        | Graphical interface                  | `pip install pygame` or `conda install conda-forge::pygame` |
 | NumPy         | Board state management               | `pip install numpy` or `conda install anaconda::numpy`      |
-| python-chess  | Chess rules and AI logic             | `pip install chess` or `conda install conda-forge::chess`   |
+| chess  | Chess rules and AI logic             | `pip install chess` or `conda install conda-forge::chess`   |
 
 Game modes and controls:
 
