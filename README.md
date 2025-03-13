@@ -30,11 +30,11 @@ The integration of these files creates a robust chess game with visual and AI ca
   - Smooth, anti-aliased piece images scaled using `pygame.transform.smoothscale`.
   - Highlighted squares for valid moves and special states (e.g., check, castling).
   - Move animations for a fluid gameplay experience.
-- **Pawn Promotion UI**: Interactive overlay for selecting promotion pieces (Queen, Rook, Bishop, Knight), styled like Chess.com.
+- **Pawn Promotion UI**: Interactive overlay for selecting promotion pieces (Queen, Rook, Bishop, Knight).
 - **Move Log Panel**:
   - Scrollable log displaying move history in algebraic notation.
   - Clean, table-like layout with columns for move number, White’s move, and Black’s move.
-  - Styled with a white background and black text for readability.
+  - Styled with a greyed-black background and white text for readability.
 
 ### Technical Details
 - **Algebraic Notation**: Comprehensive move notation in the `Move` class, supporting:
@@ -42,16 +42,16 @@ The integration of these files creates a robust chess game with visual and AI ca
   - Capture notation (e.g., `exd5`).
   - Promotion (e.g., `e8=Q`).
   - Check (`+`) and checkmate (`#`) indicators.
-- **AI Opponent**: NegaMax Algorithm with Alpha-Beta Pruning. Move Ordering and Quiescence Search is also integrated for better move selection
+- **AI Opponent**: NegaMax Algorithm with Alpha-Beta Pruning. Move Ordering and Quiescence Search is integrated for better move selection
 - **Modular Design**:
   - `ChessMain.py`: Handles the game loop, input, and rendering.
-  - `ChessEngine.py`: Core logic for game state, move generation, and validation.
+  - `ChessEngine.py`: Core logic for game state, move generation, validation and other rules.
 
-## Detailed Installation and Setup Instructions
-To ensure users can set up the project smoothly, follow the included steps:
+## Installation and Setup Instructions
+To ensure proper set up of the project, follow the included steps:
 
 1. **Cloning the Repository**:
-   - Users are instructed to clone the repository using:
+   - To clone the repository:
      ```bash
      git clone https://github.com/Suhas-S63/Chess_Engine_Python.git
      ```
@@ -73,12 +73,12 @@ To ensure users can set up the project smoothly, follow the included steps:
      - chess: For chess rules and AI logic, which also supports the `chess.polyglot` module for opening books ([chess Documentation](https://pypi.org/project/chess/))
 
 4. **Opening Book File**:
-   - The AI relies on an opening book file, `Cerebellum3Merge.bin`, which is not included in the repository due to size. Users must download this file from a reliable source and place it in the root directory. This step is crucial for early-game AI performance, as it uses the file for informed move selection.
+   - The AI relies on an opening book file, `Cerebellum3Merge.bin` or `komodo.bin`, which is not included in the repository due to size (except for `komodo.bin`). Users must download this file from a reliable source and place it in the root directory. This step is crucial for early-game AI performance, as it uses the file for informed move selection.
 
-## Comprehensive Usage Instructions
+## Usage Instructions
 
 1. **Running the Game**:
-   - Users execute the game by running:
+   - Execute the game by running:
      ```bash
      python ChessMain.py
      ```
@@ -87,7 +87,7 @@ To ensure users can set up the project smoothly, follow the included steps:
 2. **Intro Screen Options**:
    - Users can select:
      - Player color (White or Black), affecting who moves first.
-     - Board color scheme (e.g., Tournament Standard, Classic Wood, Modern Glass), enhancing visual appeal.
+     - The board color scheme (e.g., Tournament Standard, Classic Wood, Modern Glass, etc.) enhances visual appeal.
      - Game mode, offering:
        - Player vs AI: Human plays against the AI, with the option to choose color.
        - Player vs Player: Two humans play, ideal for local multiplayer.
@@ -95,11 +95,11 @@ To ensure users can set up the project smoothly, follow the included steps:
    - Selections are made via mouse interactions, with visual feedback like hover and selected states.
 
 3. **Game Controls and Features**:
-   - **Mouse Interaction**: Click to select a piece, click again to move, and right-click to cancel, providing intuitive gameplay.
+   - **Mouse Interaction**: Click to select a piece, click again to move, and right-click to cancel.
    - **Keyboard Shortcuts**:
      - 'Z': Undo the last move, supporting learning and analysis.
      - 'R': Reset the game to initial positions, allowing restarts.
-   - **Move Log**: A panel displays move history, with scroll wheel support for reviewing past moves, enhancing strategic analysis.
+   - **Move Log**: A panel displays move history, with scroll wheel support for reviewing past moves.
    - **Additional Features**: Includes pawn promotion (via a selection window), castling, en passant, and move animation for smoother visuals, all detailed in the game interface.
 
 4. **AI Details**:
@@ -140,7 +140,7 @@ The following table summarizes the dependencies:
 |---------------|--------------------------------------|-------------------------------------------------------------|
 | Pygame        | Graphical interface                  | `pip install pygame` or `conda install conda-forge::pygame` |
 | NumPy         | Board state management               | `pip install numpy` or `conda install anaconda::numpy`      |
-| chess  | Chess rules and AI logic             | `pip install chess` or `conda install conda-forge::chess`   |
+| chess         | Chess rules and AI logic             | `pip install chess` or `conda install conda-forge::chess`   |
 
 Game modes and controls:
 
@@ -156,3 +156,4 @@ Game modes and controls:
 - [Pygame Official Documentation Page](https://www.pygame.org/docs/)
 - [NumPy User Guide and Reference](https://numpy.org/doc/)
 - [chess Documentation](https://pypi.org/project/chess/)
+- [Chess Engine Tutorial by Eddie Sharick](https://www.youtube.com/playlist?list=PLBwF487qi8MGU81nDGaeNE1EnNEPYWKY_)
