@@ -136,11 +136,11 @@ Chess_Engine/Engine
 #### Tables for Clarity
 The following table summarizes the dependencies:
 
-| Library       | Purpose                              | Installation Command [`pip` / `conda`]                      |
-|---------------|--------------------------------------|-------------------------------------------------------------|
-| Pygame        | Graphical interface                  | `pip install pygame` or `conda install conda-forge::pygame` |
-| NumPy         | Board state management               | `pip install numpy` or `conda install anaconda::numpy`      |
-| chess         | Chess rules and AI logic             | `pip install chess` or `conda install conda-forge::chess`   |
+| Library       | Purpose                                 | Installation Command [`pip` / `conda`]                      |
+|---------------|-----------------------------------------|-------------------------------------------------------------|
+| Pygame        | Graphical interface                     | `pip install pygame` or `conda install conda-forge::pygame` |
+| NumPy         | Board state management                  | `pip install numpy` or `conda install anaconda::numpy`      |
+| chess         | Used primarily for opening book reading | `pip install chess` or `conda install conda-forge::chess`   |
 
 Game modes and controls:
 
