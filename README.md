@@ -110,7 +110,7 @@ To ensure proper set up of the project, follow the included steps:
 Chess_Engine/Engine
 ├── ChessMain.py         # Main game loop and UI rendering
 ├── ChessEngine.py       # Game state and move logic
-├── ChessAI.py           # Basic AI (random moves)
+├── ChessAI.py           # Various AI algorithms and random moves generator
 ├── piece_images/        # Folder for chess piece images
 │   ├── wP.png, bP.png, etc.
 └── README.md            # Project Information
