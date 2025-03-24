@@ -4,6 +4,7 @@ Main driver file. The file will be handling user move input and display current 
 import pygame as pyg
 import ChessEngine, ChessAI
 from multiprocessing import Process, Queue
+import sys
 
 # Constants for Chess Board and Move Log Panel
 BOARD_WIDTH = BOARD_HEIGHT = 640
@@ -126,6 +127,11 @@ def IntroScreen():
             if event.type == pyg.MOUSEBUTTONDOWN and event.button == 1:
                 clicked = True
 
+            elif event.type == pyg.KEYDOWN:
+                if event.key == pyg.K_q:  # Quit only if 'Q' is pressed
+                    pyg.quit()
+                    sys.exit()
+
         # Title
         title_text = title_font.render("Chess Engine", True, TEXT_COLOR)
         screen.blit(title_text, (INTRO_WIDTH / 2 - title_text.get_width() / 2, title_y))
@@ -225,6 +231,7 @@ def main():
 
     # Main game loop
     pyg.init()
+
     screen = pyg.display.set_mode((BOARD_WIDTH + MOVE_LOG_PANEL_WIDTH, BOARD_HEIGHT))
     pyg.display.set_caption("Chess Engine")
     clock = pyg.time.Clock()
@@ -338,6 +345,12 @@ def main():
                         MoveFinderProcess.terminate()
                         AI_Thinking = False
                     moveUndone = True
+
+                if event.key == pyg.K_q: # Reset to Intro Screen and starting again
+                    if AI_Thinking:
+                        MoveFinderProcess.terminate()
+                    main()
+
 
         # AI Move Generation
         if not gameOver and not human_turn and not moveUndone:
