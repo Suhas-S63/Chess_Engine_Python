@@ -543,7 +543,6 @@ def Piece_Coordination_Evaluation(game_state):
 
     # Now we evaluate the various positions on the board by calling functions of each coordination and evaluation concept
     piece_coord_score += Pawn_Structure_Evaluation(game_state)
-    # piece_coord_score += Piece_Mobility(game_state)
     piece_coord_score += King_Safety_Check(game_state)
     piece_coord_score += Bishop_Pair_Bonus(game_state)
     piece_coord_score += Rooks_On_Open_File(game_state)
@@ -606,18 +605,6 @@ def King_Safety_Check(game_state):
             penalty = (3 - shield) * 10  # Max 3 pawns, 10 points per missing pawn
             safety_score += -penalty if color == "w" else penalty
     return safety_score
-
-def Piece_Mobility(game_state):
-    # Pieces with more legal moves are typically more powerful.
-    # Counting pseudo - legal moves for each piece and adding a small bonus (centipawns per move).
-    mobility_score = 0
-    for row in range(8):
-        for col in range(8):
-            square = game_state.board_array[row, col]
-            if square != "--" and square[1] != "P":  # Exclude pawns for simplicity
-                moves = game_state.get_pseudo_legal_moves(row, col)  # Assume this exists
-                mobility_score += len(moves) * 2 if square[0] == "w" else -len(moves) * 2
-    return mobility_score
 
 ############################################################################################################
 '''
