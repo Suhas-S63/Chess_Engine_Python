@@ -6,26 +6,27 @@ import os
 
 # Global variable to hold the book reader
 _book = None
-_book_path = os.path.join(os.path.dirname(__file__), "Cerebellum3Merge.bin")
+_book_path = os.path.join(os.path.dirname(__file__), "komodo.bin")
 
 next_move = None
 counter = 0
-first_call = False # flag to indicate the first call for the function NegaMax AB
 
 
 # Piece Scores as per Chess rules
 pieceScore = {"K": 200, "Q": 9, "R": 5, "B": 3, "N": 3, "P": 1}
 CHECKMATE = 1000
 STALEMATE = 0
-DEPTH = 4
+DEPTH = 5
 Q_SEARCH_DEPTH = 2
 
 # Killer moves: two slots per depth (adjust MAX_DEPTH as needed)
-MAX_DEPTH = 10
-killer_moves = [[None, None] for _ in range(MAX_DEPTH)]
+killer_moves = [[] for _ in range(DEPTH + 1)]
 
 # History table: tracks successful moves (move identifier -> score)
 history_table = {}
+
+# Counter moves: to keep track of moves that gave strong responses to the opponent's last move
+counter_moves = {} # Key: (opponent_move_id), Value: best_response_move
 
 # defining piece influence value/weights for improved evaluation
 KnightScores = np.array([
@@ -51,13 +52,13 @@ BishopScores = np.array([
 ])
 
 RookScores = np.array([
-    [10, 10, 10, 15, 15, 10, 10, 10],  # Rank 1
-    [20, 20, 20, 20, 20, 20, 20, 20],  # Rank 2
-    [5, 7, 10, 15, 15, 10, 7, 5],  # Rank 3
-    [5, 7, 10, 10, 10, 10, 7, 5],  # Rank 4
-    [5, 7, 10, 10, 10, 10, 7, 5],  # Rank 5
-    [5, 7, 10, 15, 15, 10, 7, 5],  # Rank 6
-    [20, 20, 20, 20, 20, 20, 20, 20],  # Rank 7
+    [10, 10, 10, 15, 15, 10, 10, 10],
+    [20, 20, 20, 20, 20, 20, 20, 20],
+    [5, 7, 10, 15, 15, 10, 7, 5],
+    [5, 7, 10, 10, 10, 10, 7, 5],
+    [5, 7, 10, 10, 10, 10, 7, 5],
+    [5, 7, 10, 15, 15, 10, 7, 5],
+    [20, 20, 20, 20, 20, 20, 20, 20],
     [10, 10, 10, 15, 15, 10, 10, 10]
 ])
 
@@ -246,30 +247,56 @@ def FindBestMove_NegaMax(game_state, validMoves):
 '''
 NegaMax with Alpha-Beta pruning implementation 
 '''
-def NegaMax_AB_Pruning(game_state, validMoves, depth, alpha, beta, turn_multiplier): # alpha -> Upper bound value, beta -> Lower bound value
+def NegaMax_AB_Pruning(game_state, validMoves, depth, alpha, beta, turn_multiplier, previous_move=None): # alpha -> Upper bound value, beta -> Lower bound value
     global next_move, counter
     counter += 1 # Counting the number of position states visited
     if depth == 0:
-        # return turn_multiplier * BoardScore(game_state)
         return Quiescence_Search(game_state, alpha, beta, turn_multiplier, Q_SEARCH_DEPTH)
 
-    # Move ordering - has to be implemented
-    ordered_moves = Move_Ordering(validMoves, depth)
+    # Move ordering
+    ordered_moves = Move_Ordering(game_state, validMoves, depth)
     max_score = -CHECKMATE
+    # starting the search process
     for move in ordered_moves:
         game_state.MakeMove(move)
         next_moves = game_state.GetValidMoves()
+        # calling decision algorithm recursively
         score = -NegaMax_AB_Pruning(game_state, next_moves, depth - 1, -beta, -alpha,  -turn_multiplier) # switching alpha and beta for the opponent moves
+        game_state.UndoMove()
+
         if score > max_score:
             max_score = score
-            if depth == DEPTH:
+            if depth == DEPTH: # Root Node
                 next_move = move
                 print(f"Move: {move}, Score: {score}")
-        game_state.UndoMove()
+
         # Pruning bad game state trees which don't much of an advantage
         if max_score > alpha:
             alpha = max_score # set the max_score to alpha for the best game state tree
+
+        # Beta Cutoff: updating heuristics here
         if alpha >= beta:
+            # updating history table for the move causing cutoff
+            promoted_to = move.Pawn_Promoted_to if move.PawnPromotion else None
+            move_id = (move.startRow, move.startCol, move.endRow, move.endCol, promoted_to)
+            if move_id not in history_table:
+                history_table[move_id] = 0
+            history_table[move_id] += depth ** 2  # Weight by depth squared
+
+            # Updating counter moves if there was a previous move
+            if previous_move is not None:
+                opponent_move_id = (previous_move.startRow, previous_move.startCol,
+                                    previous_move.endRow, previous_move.endCol)
+                counter_moves[opponent_move_id] = move
+
+            # Updating killer moves
+            if not move.IsCaptured: # Quiet moves only
+                if move not in killer_moves[depth]:
+                    if len(killer_moves[depth]) < 2:
+                        killer_moves[depth].append(move)
+                    else:
+                        killer_moves[depth][1] = killer_moves[depth][0] # Shifting older killer move
+                        killer_moves[depth][0] = move # New killer in first slot
             break # prune the rest of the game state tree for the current move
     return max_score
 
@@ -278,7 +305,7 @@ Helper method for NegaMax with Alpha-Beta pruning implementation  for Chess AI
 its purpose is to call the initial recursive call to FindMove_NegaMax_AB_Pruning() and return results
 '''
 def FindBestMove_NegaMax_AB_Pruning(game_state, validMoves, return_queue):
-    global next_move, counter, first_call
+    global next_move, counter
     next_move = None # default
     counter = 0
 
@@ -302,11 +329,11 @@ def FindBestMove_NegaMax_AB_Pruning(game_state, validMoves, return_queue):
             print(f"Book move: {board.san(selected_move)}")
         else:
             # No book entries found, proceed with NegaMax with Alpha-Beta pruning
-            NegaMax_AB_Pruning(game_state, validMoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if game_state.whiteToMove else -1)
+            NegaMax_AB_Pruning(game_state, validMoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if game_state.whiteToMove else -1,previous_move=None)
             print(f"Position's seen by NegaMax AB Pruning Algorithm: {counter}")
     except KeyError:
         # Position not in book, proceeding with search
-        NegaMax_AB_Pruning(game_state, validMoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if game_state.whiteToMove else -1)
+        NegaMax_AB_Pruning(game_state, validMoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if game_state.whiteToMove else -1,previous_move=None)
         # in the above function call -CHECKMATE is the alpha value and CHECKMATE is the beta value
         print(f"Position's seen by NegaMax AB Pruning Algorithm: {counter}")
     return_queue.put(next_move)
@@ -316,7 +343,7 @@ def FindBestMove_NegaMax_AB_Pruning(game_state, validMoves, return_queue):
 '''
 Move Ordering function to improve move searching and evaluation for Engine Optimization
 '''
-def Move_Ordering(validMoves, depth):
+def Move_Ordering(game_state, validMoves, depth, previous_move=None):
     def move_score(move):
         score = 0
 
@@ -325,6 +352,11 @@ def Move_Ordering(validMoves, depth):
             victim_value = pieceScore[move.pieceCaptured[1]] # e.g., 'P' from 'wP'
             attacker_value = pieceScore[move.pieceMoved[1]]
             score += 10000 + (victim_value * 10 - attacker_value)
+
+        # Bonus for advancing to promotion rank
+        if (move.pieceMoved[1] == 'P' and
+                ((move.endRow == 6 and game_state.whiteToMove) or (move.endRow == 1 and not game_state.whiteToMove))):
+            score += 7000
 
         # Promotions: score based on promoted piece
         if move.PawnPromotion:
@@ -342,12 +374,27 @@ def Move_Ordering(validMoves, depth):
         if 0 <= depth < len(killer_moves) and move in killer_moves[depth]:
             score += 30000 # Killer move bonus
 
+        # Counter Moves: boost if move counters the opponent's last move
+        if previous_move is not None:
+            opponent_move_id = (previous_move.startRow, previous_move.startCol,
+                                    previous_move.endRow, previous_move.endCol)
+            counter_move = counter_moves.get(opponent_move_id)
+            if counter_move is not None and move == counter_move:
+                score += 25000
+
         # Checks: encouraging forcing moves
         if move.in_check:
             score += 5000
 
+        # Ordering quiet moves to prioritize moves that improve the piece's position marginally
+        if not move.IsCaptured and not move.PawnPromotion:
+            start_score = Piece_Influence_Scores[move.pieceMoved[1] if move.pieceMoved[1] != "P" else move.pieceMoved][move.startRow][move.startCol]
+            end_score = Piece_Influence_Scores[move.pieceMoved[1] if move.pieceMoved[1] != "P" else move.pieceMoved][move.endRow][move.endCol]
+            score += (end_score - start_score) * 100  # Scale to fit with other scores
+
         # History heuristics: add score is available and stored
-        move_id = (move.startRow, move.startCol, move.endRow, move.endCol)
+        promoted_to = move.Pawn_Promoted_to if move.PawnPromotion else None
+        move_id = (move.startRow, move.startCol, move.endRow, move.endCol, promoted_to)
         if move_id in history_table:
             score += history_table[move_id]
 
@@ -375,7 +422,7 @@ def Quiescence_Search(game_state, alpha, beta, turn_multiplier, max_depth=2):
 
     # Only consider capture and promotion moves (can be improved, but we are just keeping these considerations for now)
     capture_promotion_moves = [move for move in game_state.GetValidMoves() if move.IsCaptured or move.PawnPromotion]
-    Ordered_Moves = Move_Ordering(capture_promotion_moves, depth = 2) # Setting depth for quiescence search
+    Ordered_Moves = Move_Ordering(game_state, capture_promotion_moves, depth = 2) # Setting depth for quiescence search
 
     for move in Ordered_Moves:
         # Delta Pruning: skip moves that can't improve alpha value
@@ -420,7 +467,7 @@ def BoardScore(game_state):
         for col in range(len(game_state.board_array[row])):
             square = game_state.board_array[row, col]
             if square != "--":
-                # Scoring positionally based on  piece (Need to change)
+                # Scoring positionally based on  piece
                 if square[1] == "P": # For pawns
                     piece_position_score = Piece_Influence_Scores[square][row, col]
                 else: # For other pieces
@@ -430,6 +477,10 @@ def BoardScore(game_state):
                     score += pieceScore[square[1]] + piece_position_score
                 elif square[0] == 'b':
                     score -= pieceScore[square[1]] + piece_position_score
+
+    # Additional advanced evaluation function for evaluating the piece (only to be used if host machine is powerful to run
+    # as it will be computationally heavier than the simple evaluation
+    score += Piece_Coordination_Evaluation(game_state)
     return score
 
 ############################################################################################################
@@ -469,7 +520,7 @@ which we need to convert to our Move class.
 def chess_pack_move_to_Move_class(chess_move, game_state, board):
     start_square = chess_move.from_square
     end_square = chess_move.to_square
-    # Convert to your row indexing (0=rank8, 7=rank1)
+    # Converting to our implementation of  row indexing (row 0 = rank 8, row 7 =rank 1)
     start_row = 7 - (start_square // 8)
     start_col = start_square % 8
     end_row = 7 - (end_square // 8)
@@ -478,3 +529,260 @@ def chess_pack_move_to_Move_class(chess_move, game_state, board):
     is_castle = board.is_castling(chess_move)
     is_en_passant = board.is_en_passant(chess_move)
     return Move((start_row, start_col), (end_row, end_col), game_state.board_array,EnPassant= is_en_passant, IsCastleMove= is_castle, Promotion_Piece=promotion)
+
+############################################################################################################
+'''
+Function which checks multiple board position concepts and piece coordination concepts for advanced evaluation 
+which will be used by BoardScore() function to evaluate the board and provide the correct move to be done
+'''
+def Piece_Coordination_Evaluation(game_state):
+    """
+    This function evaluates the co-ordination concepts of the pieces mentioned below.
+    """
+    piece_coord_score = 0
+
+    # Now we evaluate the various positions on the board by calling functions of each coordination and evaluation concept
+    piece_coord_score += Pawn_Structure_Evaluation(game_state)
+    # piece_coord_score += Piece_Mobility(game_state)
+    piece_coord_score += King_Safety_Check(game_state)
+    piece_coord_score += Bishop_Pair_Bonus(game_state)
+    piece_coord_score += Rooks_On_Open_File(game_state)
+    piece_coord_score += Connected_Rooks(game_state)
+    piece_coord_score += Knight_Outposts(game_state)
+    piece_coord_score += Queen_And_Minor_Piece_Co_ordination(game_state)
+    piece_coord_score += Pawn_Support(game_state)
+
+    return piece_coord_score
+
+############################################################################################################
+'''
+Board piece position checking functions contributing for board evaluation for stronger moves
+'''
+def Pawn_Structure_Evaluation(game_state):
+    # Add bonuses or penalties for:
+    # -> Passed Pawns: Pawns with no enemy pawns ahead or on adjacent files(Bonus).
+    # -> Doubled Pawns: Two pawns of the same color on one file(penalty).
+    # -> Isolated Pawns: Pawns with no friendly pawns on adjacent files (penalty).
+    pawn_files = {"w": [0] * 8, "b": [0] * 8}
+    score_adjust = 0
+    for row in range(8):
+        for col in range(8):
+            square = game_state.board_array[row, col]
+            if square != "--" and square[1] == "P":
+                color = square[0]
+                pawn_files[color][col] += 1
+                # passed pawn checking
+                is_passed = True
+                for r in range(row + 1 if color == "b" else 0, row if color == "b" else 8):
+                    if game_state.board_array[r, col] != "--" or \
+                       (col > 0 and game_state.board_array[r, col-1] != "--") or \
+                       (col < 7 and game_state.board_array[r, col+1] != "--"):
+                        is_passed = False
+                        break
+                if is_passed:
+                    score_adjust += 50 if color == "w" else -50  # Bonus for passed pawn
+    # Check doubled pawns
+    for col in range(8):
+        if pawn_files["w"][col] > 1:
+            score_adjust -= 20 * (pawn_files["w"][col] - 1)
+        if pawn_files["b"][col] > 1:
+            score_adjust += 20 * (pawn_files["b"][col] - 1)
+    return score_adjust
+
+
+def King_Safety_Check(game_state):
+    #  A king under check is a major disadvantage therefore,
+    # we check for pawn shields( pawns in front of the king) and penalise the absense based on the number of pawns
+    safety_score = 0
+    for color, row in [("w", 7), ("b", 0)]:  # kings on back rank
+        king_col = None
+        for col in range(8):
+            if game_state.board_array[row, col] == color + "K":
+                king_col = col
+                break
+        if king_col is not None:
+            shield = sum(1 for c in range(max(0, king_col-1), min(8, king_col+2))
+                        if game_state.board_array[row-1 if color == "w" else row+1, c] == color + "P")
+            penalty = (3 - shield) * 10  # Max 3 pawns, 10 points per missing pawn
+            safety_score += -penalty if color == "w" else penalty
+    return safety_score
+
+def Piece_Mobility(game_state):
+    # Pieces with more legal moves are typically more powerful.
+    # Counting pseudo - legal moves for each piece and adding a small bonus (centipawns per move).
+    mobility_score = 0
+    for row in range(8):
+        for col in range(8):
+            square = game_state.board_array[row, col]
+            if square != "--" and square[1] != "P":  # Exclude pawns for simplicity
+                moves = game_state.get_pseudo_legal_moves(row, col)  # Assume this exists
+                mobility_score += len(moves) * 2 if square[0] == "w" else -len(moves) * 2
+    return mobility_score
+
+############################################################################################################
+'''
+Piece Coordination Functions for improved evaluation (check for co-ordination like Bishop pairs, Rooks on open files, 
+Connected Rooks, Knight Outposts, Queen and Minor Piece Co-ordination Functions, Pawn Support
+'''
+def Bishop_Pair_Bonus(game_state):
+    """
+    Bonus is awarded for having two bishops (the "bishop pair"), which is a strong advantage in open positions.
+    """
+    # Bishop pair bonus
+    coord_score = 0
+    bishops = {"w": 0, "b": 0}
+    for row in range(8):
+        for col in range(8):
+            square = game_state.board_array[row, col]
+            if square != "--" and square[1] == "B":
+                bishops[square[0]] += 1
+    if bishops["w"] == 2:
+        coord_score += 50
+    if bishops["b"] == 2:
+        coord_score -= 50
+
+    return coord_score
+
+def Rooks_On_Open_File(game_state):
+    """
+    Rooks are most effective when placed on open files (files with no pawns), as they can control the file and potentially invade the opponent’s position.
+    -> First, we check for pawn in each file (columns)
+    -> if a file has no pawns, we award a bonus for any rook present on the file
+    """
+    open_file_score = 0
+    for col in range(8):
+        has_pawn = False
+        for row in range(8):
+            if game_state.board_array[row, col][1] == "P": # checking for any pawn in the present rook file
+                has_pawn = True
+                break
+        if not has_pawn:
+            for row in range(8):
+                piece = game_state.board_array[row, col]
+                if piece == "wR":
+                    open_file_score += 10 # Bonus for white rook
+                if piece == "bR":
+                    open_file_score -= 10 # Penalty for black rook
+    return open_file_score
+
+def Connected_Rooks(game_state):
+    """
+    Connected rooks (two rooks of the same color on the same rank or file with no pieces between them)
+    can work together to dominate a line.
+    -> First, we find all the rooks of each color
+    -> Then, we check the pairs to see if they are on the same rank or file and unobstructed
+    """
+    connected_score = 0
+    for color in ["w", "b"]:
+        rooks = []
+        for row in range(8):
+            for col in range(8):
+                if game_state.board_array[row, col] == color + "R":
+                    rooks.append((row, col))
+
+        for i in range(len(rooks)):
+            for j in range(i + 1, len(rooks)):
+                row1, col1 = rooks[i]
+                row2, col2 = rooks[j]
+                if row1 == row2: # Same Rank(row)
+                    # checking the rooks by going through the columns
+                    if all(game_state.board_array[row1, k] == '--' for k in range(min(col1, col2) + 1, max(col1, col2))):
+                        connected_score += 15 if color == 'w' else -15
+                elif col1 == col2: #Same File(col)
+                    # checking the rooks by going through the rows
+                    if all(game_state.board_array[k, col1] == '--' for k in range(min(row1, row2) + 1, max(row1, row2))):
+                        connected_score += 15 if color == 'w' else -15
+    return connected_score
+
+def Knight_Outposts(game_state):
+    """
+    Knight outposts are squares that are controlled by a knight and a pawn. They are powerful on outposts as they can't
+    be captured by the opponent's pawns especially in advanced central positions.
+    -> First, we find all the knights positions
+    -> Then, we check if it's safe from pawn attacks by opponent
+    """
+    outpost_score = 0
+    for row in range(8):
+        for col in range(8):
+            piece = game_state.board_array[row, col]
+            if piece == "wN" and 2 <= row <= 4: # White knight on ranks 4 to 6
+                if not Can_Be_Attacked_By_Pawn(game_state, row, col, 'b'):
+                    outpost_score += 10
+            elif piece == "bN" and 3 <= row <= 5: # Black rook on ranks 3 to 5
+                if not Can_Be_Attacked_By_Pawn(game_state, row, col, 'w'):
+                    outpost_score -= 10
+    return outpost_score
+
+def Can_Be_Attacked_By_Pawn(game_state, row, col, attacker_color):
+    """
+    returns boolean if a pawn is able to attack (helper function for Knight Outposts function)
+    """
+    if attacker_color == "w" and row > 0:
+        if col > 0 and game_state.board_array[row - 1, col - 1] == "wP":
+            return True
+        if col < 7 and game_state.board_array[row - 1, col + 1] == "wP":
+            return True
+    elif attacker_color == "b" and row < 7:
+        if col > 0 and game_state.board_array[row + 1, col - 1] == "bP":
+            return True
+        if col < 7 and game_state.board_array[row + 1, col + 1] == "bP":
+            return True
+    return False
+
+def Queen_And_Minor_Piece_Co_ordination(game_state):
+    """
+    Queen and minor piece co-ordination is a powerful evaluation metric for positions evaluation.
+    The queen often pairs effectively with a knight or bishop to control key lines (ranks, files, or diagonals).
+    -> First, we find the queen and the minor pieces(knights and bishops)
+    -> Then, a bonus is awarded if they are on same rank, file or diagonal
+    """
+    coord_score = 0
+    for color in ['w', 'b']:
+        queen_position = None
+        minor_pieces = []
+        for row in range(8):
+            for col in range(8):
+                piece = game_state.board_array[row, col]
+                if piece == color + "Q":
+                    queen_position = (row, col)
+                elif piece[1] in [color + 'N', color + 'B']:
+                    minor_pieces.append((row, col))
+
+        if queen_position is not None:
+            queen_row, queen_col = queen_position
+            for minor_piece_row, minor_piece_col in minor_pieces:
+                # checking if the queen and the current minor piece is on same rank, same file or same diagonal
+                if queen_row == minor_piece_row or abs(queen_row - minor_piece_row) == abs(queen_col - minor_piece_col):
+                    coord_score += 5 if color == 'w' else -5
+    return coord_score
+
+def Pawn_Support(game_state):
+    """
+    Pieces defended by pawns are more stable and hard to attack
+    for each non-pawn piece, we check if a friendly pawn defends it
+    """
+    support_score = 0
+    for row in range(8):
+        for col in range(8):
+            piece = game_state.board_array[row, col]
+            if piece != '--' and piece[1] != 'P':
+                color = piece[0]
+                if Is_Defended_By_Pawn(game_state, row, col, color): # checks if a friendly pawn defends an ally piece
+                    support_score += 5 if color == 'w' else -5
+    return support_score
+
+def Is_Defended_By_Pawn(game_state, row, col, color):
+    """
+    returns boolean if a piece is defended by a pawn (helper function for Pawn Support function)
+    """
+    if color == "w" and row < 7:
+        if col > 0 and game_state.board_array[row + 1, col - 1] == "wP":
+            return True
+        if col < 7 and game_state.board_array[row + 1, col + 1] == "wP":
+            return True
+    elif color == "b" and row > 0:
+        if col > 0 and game_state.board_array[row - 1, col - 1] == "bP":
+            return True
+        if col < 7 and game_state.board_array[row - 1, col + 1] == "bP":
+            return True
+    return False
