@@ -4,7 +4,7 @@ Main driver file. The file will be handling user move input and display current 
 import pygame as pyg
 import ChessEngine, ChessAI
 from multiprocessing import Process, Queue
-import sys
+import sys, os
 
 # Constants for Chess Board and Move Log Panel
 BOARD_WIDTH = BOARD_HEIGHT = 640
@@ -211,8 +211,10 @@ Initialising a global dictionary of images. The function will be called once in 
 
 def LoadImages():
     pieces = ['bR', 'bN', 'bB', 'bQ', 'bK', 'bP', 'wR', 'wN', 'wB', 'wQ', 'wK', 'wP']
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     for piece in pieces:
-        PIECE_IMAGES[piece] = pyg.transform.smoothscale(pyg.image.load(f'piece_images/{piece}.png'),
+        image_path = os.path.join(base_dir, 'piece_images', f'{piece}.png')
+        PIECE_IMAGES[piece] = pyg.transform.smoothscale(pyg.image.load(image_path),
                                                   (SQUARE_SIZE, SQUARE_SIZE))
 
         # we can now access an image by passing the piece notation in the dictionary
