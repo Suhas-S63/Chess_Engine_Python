@@ -4,7 +4,7 @@ import numpy as np
 
 class GameState:
     def __init__(self):
-        # board is the 8x8 2d list containing the pieces and represented by 2 characters
+        # board is the 8x8 2d numpy array containing the pieces and represented by 2 characters
         # first character represents the "Color" of the piece(White or Black)
         # second character represents the "Type" of the piece(King, Queen, Rook)
         # "--" represents empty board space
@@ -19,16 +19,16 @@ class GameState:
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ], dtype=object)
         # Test Board
-        # self.board = [
-        #     ["--", "--", "--", "--", "bK", "--", "--", "--"],  # Columns are called "Files"
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],  # Rows are called "Ranks"
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "wK", "--", "--", "--"]
-        # ]
+#         self.board_array = np.array([
+#     ['--', '--', '--', '--', 'bK', '--', '--', '--'],  # Rank 8: bK on e8
+#     ['--', '--', '--', '--', '--', '--', '--', '--'],  # Rank 7
+#     ['--', '--', '--', '--', '--', '--', '--', '--'],  # Rank 6
+#     ['--', '--', '--', '--', 'bR', '--', '--', '--'],  # Rank 5: bR on e5
+#     ['--', '--', '--', '--', '--', '--', '--', '--'],  # Rank 4
+#     ['--', '--', '--', '--', '--', '--', '--', '--'],  # Rank 3
+#     ['--', '--', '--', '--', '--', '--', '--', '--'],  # Rank 2
+#     ['wR', '--', '--', '--', 'wK', '--', '--', 'wR']   # Rank 1: wR on a1, wK on e1, wR on h1
+# ], dtype=object)
         # mapping the piece type letter to the function having the logic of that piece
         self.PieceMoveFunctions = {'P': self.GetPawnMoves, "R": self.GetRookMoves, "N": self.GetKnightMoves,
                                    "B": self.GetBishopMoves, "Q": self.GetQueenMoves, "K": self.GetKingMoves}
