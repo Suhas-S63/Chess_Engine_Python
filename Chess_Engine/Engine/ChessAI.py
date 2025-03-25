@@ -260,6 +260,12 @@ def NegaMax_AB_Pruning(game_state, validMoves, depth, alpha, beta, turn_multipli
     for move in ordered_moves:
         game_state.MakeMove(move)
         next_moves = game_state.GetValidMoves()
+        if game_state.Checkmate: # checking for checkmates during searching
+            game_state.UndoMove()
+            score = CHECKMATE - (DEPTH - depth) # adjusting score to checkmate exponentially more value based on how quickly deliverable
+            if depth == DEPTH: # Root Node
+                print(f"Move: {move}, Score: {score} (Checkmate)")
+            return score # Return immediately to prioritize checkmate
         # calling decision algorithm recursively
         score = -NegaMax_AB_Pruning(game_state, next_moves, depth - 1, -beta, -alpha,  -turn_multiplier) # switching alpha and beta for the opponent moves
         game_state.UndoMove()
@@ -281,7 +287,8 @@ def NegaMax_AB_Pruning(game_state, validMoves, depth, alpha, beta, turn_multipli
             move_id = (move.startRow, move.startCol, move.endRow, move.endCol, promoted_to)
             if move_id not in history_table:
                 history_table[move_id] = 0
-            history_table[move_id] += depth ** 2  # Weight by depth squared
+            history_table[move_id] += min(history_table[move_id] + depth ** 2, 30)  # Cap at 30
+            # as the goal is to keep quite moves scores below 60(the score of checks)
 
             # Updating counter moves if there was a previous move
             if previous_move is not None:
@@ -351,28 +358,28 @@ def Move_Ordering(game_state, validMoves, depth, previous_move=None):
         if move.IsCaptured:
             victim_value = pieceScore[move.pieceCaptured[1]] # e.g., 'P' from 'wP'
             attacker_value = pieceScore[move.pieceMoved[1]]
-            score += 10000 + (victim_value * 10 - attacker_value)
+            score += 100 + (victim_value * 10 - attacker_value)
 
         # Bonus for advancing to promotion rank
         if (move.pieceMoved[1] == 'P' and
                 ((move.endRow == 6 and game_state.whiteToMove) or (move.endRow == 1 and not game_state.whiteToMove))):
-            score += 7000
+            score += 90
 
         # Promotions: score based on promoted piece
         if move.PawnPromotion:
             promoted_piece = move.Pawn_Promoted_to
             if promoted_piece == 'Q':
-                score += 20000
+                score += 99
             elif promoted_piece == 'R':
-                score += 15000
+                score += 95
             elif promoted_piece == 'B':
-                score += 10000
+                score += 93
             elif promoted_piece == 'N':
-                score += 8000
+                score += 91
 
         # Killer Moves: boost if move is a killer at this depth
         if 0 <= depth < len(killer_moves) and move in killer_moves[depth]:
-            score += 30000 # Killer move bonus
+            score += 80 # Killer move bonus
 
         # Counter Moves: boost if move counters the opponent's last move
         if previous_move is not None:
@@ -380,17 +387,17 @@ def Move_Ordering(game_state, validMoves, depth, previous_move=None):
                                     previous_move.endRow, previous_move.endCol)
             counter_move = counter_moves.get(opponent_move_id)
             if counter_move is not None and move == counter_move:
-                score += 25000
+                score += 70
 
         # Checks: encouraging forcing moves
         if move.in_check:
-            score += 5000
+            score += 60
 
         # Ordering quiet moves to prioritize moves that improve the piece's position marginally
         if not move.IsCaptured and not move.PawnPromotion:
             start_score = Piece_Influence_Scores[move.pieceMoved[1] if move.pieceMoved[1] != "P" else move.pieceMoved][move.startRow][move.startCol]
             end_score = Piece_Influence_Scores[move.pieceMoved[1] if move.pieceMoved[1] != "P" else move.pieceMoved][move.endRow][move.endCol]
-            score += (end_score - start_score) * 100  # Scale to fit with other scores
+            score += (end_score - start_score) # Adjusted scaling
 
         # History heuristics: add score is available and stored
         promoted_to = move.Pawn_Promoted_to if move.PawnPromotion else None
@@ -433,10 +440,13 @@ def Quiescence_Search(game_state, alpha, beta, turn_multiplier, max_depth=2):
         else:
             gain = 0
 
-        if stand_pat + gain < alpha:
-            continue # Skipping the move
+        if stand_pat + gain < alpha and not move.in_check: # Skipping non-check moves that don't improve alpha
+            continue
 
         game_state.MakeMove(move)
+        if game_state.Checkmate: # checkmate found
+            game_state.UndoMove()
+            return turn_multiplier * CHECKMATE if game_state.whiteToMove else -turn_multiplier * CHECKMATE
         score = -Quiescence_Search(game_state, -beta, -alpha, -turn_multiplier, max_depth - 1)
         game_state.UndoMove()
 
@@ -458,7 +468,19 @@ def BoardScore(game_state):
             return -CHECKMATE # black wins
         else:
             return CHECKMATE # white wins
-    elif game_state.Stalemate:
+    elif game_state.Stalemate: # Penalising stalemate positions
+        material_score = 0
+        for row in range(len(game_state.board_array)):
+            for col in range(len(game_state.board_array[row])):
+                square = game_state.board_array[row, col]
+                if square != '--':
+                    piece_value = pieceScore[square[1]]
+                    material_score += piece_value if square[0] == 'w' else -piece_value
+        # Penalising stalemate if the side to move has material advantage
+        if game_state.whiteToMove and material_score > 35:
+            return -50 # discouraging stalemate for White
+        elif not game_state.whiteToMove and material_score < -35:
+            return 50 # discouraging stalemate for Black
         return STALEMATE # neither side wins
 
     # Based on pure captures and board material
